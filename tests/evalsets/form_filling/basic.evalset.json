@@ -1,0 +1,139 @@
+{
+  "eval_set_id": "form_filling_basic_v1",
+  "name": "Basic Form Filling Evaluation",
+  "description": "Tests for basic form filling capabilities on the simple contact form",
+  "eval_cases": [
+    {
+      "eval_case_id": "simple_form_complete",
+      "name": "Complete Simple Contact Form",
+      "description": "Fill out all fields in the simple contact form",
+      "conversation": [
+        {
+          "role": "user",
+          "content": "Navigate to http://localhost:8080/simple and fill out the contact form with this information:\n- First Name: John\n- Last Name: Doe\n- Email: john.doe@example.com\n- Phone: 555-123-4567\n- Subject: General Inquiry\n- Message: This is a test message from the automated form filling agent.\n\nDo not submit the form yet."
+        }
+      ],
+      "expected_tool_calls": [
+        {
+          "tool_name": "browser_navigate",
+          "arguments": {
+            "url": "http://localhost:8080/simple"
+          }
+        },
+        {
+          "tool_name": "browser_type",
+          "arguments": {
+            "selector": "#first_name",
+            "text": "John"
+          }
+        },
+        {
+          "tool_name": "browser_type",
+          "arguments": {
+            "selector": "#last_name",
+            "text": "Doe"
+          }
+        },
+        {
+          "tool_name": "browser_type",
+          "arguments": {
+            "selector": "#email",
+            "text": "john.doe@example.com"
+          }
+        },
+        {
+          "tool_name": "browser_type",
+          "arguments": {
+            "selector": "#phone",
+            "text": "555-123-4567"
+          }
+        },
+        {
+          "tool_name": "browser_select",
+          "arguments": {
+            "selector": "#subject",
+            "value": "general"
+          }
+        },
+        {
+          "tool_name": "browser_type",
+          "arguments": {
+            "selector": "#message",
+            "text": "This is a test message from the automated form filling agent."
+          }
+        }
+      ],
+      "expected_response_keywords": [
+        "filled",
+        "form",
+        "John",
+        "Doe"
+      ],
+      "criteria": {
+        "tool_trajectory_match": "IN_ORDER",
+        "min_fields_filled": 6
+      }
+    },
+    {
+      "eval_case_id": "simple_form_screenshot_verify",
+      "name": "Screenshot Verification After Fill",
+      "description": "Take a screenshot to verify form was filled correctly",
+      "conversation": [
+        {
+          "role": "user",
+          "content": "Navigate to http://localhost:8080/simple, fill the form with:\n- First Name: Test\n- Last Name: User\n- Email: test@test.com\n- Subject: Support\n- Message: Testing\n\nThen take a screenshot to verify the form is filled."
+        }
+      ],
+      "expected_tool_calls": [
+        {
+          "tool_name": "browser_navigate"
+        },
+        {
+          "tool_name": "browser_type"
+        },
+        {
+          "tool_name": "browser_screenshot"
+        }
+      ],
+      "criteria": {
+        "tool_trajectory_match": "IN_ORDER",
+        "must_include_tools": ["browser_navigate", "browser_screenshot"]
+      }
+    },
+    {
+      "eval_case_id": "simple_form_partial",
+      "name": "Partial Form Fill",
+      "description": "Fill only required fields",
+      "conversation": [
+        {
+          "role": "user",
+          "content": "Go to http://localhost:8080/simple and fill only the required fields:\n- First Name: Alice\n- Last Name: Wonder\n- Email: alice@wonder.land\n- Subject: Other\n- Message: Minimal form test"
+        }
+      ],
+      "expected_tool_calls": [
+        {
+          "tool_name": "browser_navigate"
+        },
+        {
+          "tool_name": "browser_type"
+        }
+      ],
+      "expected_response_keywords": [
+        "filled",
+        "required"
+      ],
+      "criteria": {
+        "tool_trajectory_match": "ANY_ORDER",
+        "min_fields_filled": 5
+      }
+    }
+  ],
+  "evaluation_config": {
+    "metrics": [
+      "tool_trajectory_avg_score",
+      "final_response_match_v2"
+    ],
+    "trajectory_match_type": "IN_ORDER",
+    "timeout_seconds": 120
+  }
+}
