@@ -1,0 +1,143 @@
+.PHONY: help install install-dev setup-env start-services stop-services \
+        run run-headless run-headed test test-fast test-integration \
+        lint format typecheck mock-server clean
+
+# Default target
+help:
+	@echo "GUI Agent - Available Commands"
+	@echo "==============================="
+	@echo ""
+	@echo "Setup:"
+	@echo "  make install        Install production dependencies"
+	@echo "  make install-dev    Install development dependencies"
+	@echo "  make setup-env      Copy .env.example to .env"
+	@echo ""
+	@echo "Services:"
+	@echo "  make start-services Start Phoenix + Playwright MCP (Docker)"
+	@echo "  make stop-services  Stop all Docker services"
+	@echo "  make mock-server    Start the mock form website"
+	@echo ""
+	@echo "Run Agent:"
+	@echo "  make run            Run agent (uses BROWSER_HEADLESS from .env)"
+	@echo "  make run-headless   Run agent in headless mode (GCP Cloud Shell)"
+	@echo "  make run-headed     Run agent in headed mode (local dev)"
+	@echo "  make adk-web        Start ADK web interface"
+	@echo ""
+	@echo "Testing:"
+	@echo "  make test           Run all tests"
+	@echo "  make test-fast      Run fast tests only (skip slow/integration)"
+	@echo "  make test-integration  Run integration tests"
+	@echo "  make test-evalset   Run ADK evaluation tests"
+	@echo ""
+	@echo "Code Quality:"
+	@echo "  make lint           Run linter (ruff)"
+	@echo "  make format         Format code (ruff)"
+	@echo "  make typecheck      Run type checker (mypy)"
+	@echo ""
+	@echo "Cleanup:"
+	@echo "  make clean          Remove build artifacts and caches"
+
+# =============================================================================
+# Setup
+# =============================================================================
+
+install:
+	pip install -e .
+
+install-dev:
+	pip install -e ".[dev,mock-server]"
+
+setup-env:
+	@if [ ! -f .env ]; then \
+		cp .env.example .env; \
+		echo "Created .env from .env.example - please edit with your values"; \
+	else \
+		echo ".env already exists"; \
+	fi
+
+# =============================================================================
+# Docker Services
+# =============================================================================
+
+start-services:
+	docker compose up -d
+	@echo "Services starting..."
+	@echo "  Phoenix UI: http://localhost:6006"
+	@echo "  Playwright MCP: http://localhost:3000"
+
+stop-services:
+	docker compose down
+
+logs:
+	docker compose logs -f
+
+# =============================================================================
+# Run Agent
+# =============================================================================
+
+run:
+	python -m gui_agent.cli
+
+run-headless:
+	BROWSER_HEADLESS=true python -m gui_agent.cli
+
+run-headed:
+	BROWSER_HEADLESS=false python -m gui_agent.cli
+
+adk-web:
+	adk web src/gui_agent
+
+# =============================================================================
+# Mock Server
+# =============================================================================
+
+mock-server:
+	uvicorn mock_sites.server:app --host 0.0.0.0 --port 8080 --reload
+
+# =============================================================================
+# Testing
+# =============================================================================
+
+test:
+	pytest tests/ -v
+
+test-fast:
+	pytest tests/ -v -m "not slow and not integration"
+
+test-integration:
+	pytest tests/ -v -m "integration"
+
+test-evalset:
+	pytest tests/ -v -m "evalset"
+
+test-cov:
+	pytest tests/ -v --cov=src/gui_agent --cov-report=html --cov-report=term
+
+# =============================================================================
+# Code Quality
+# =============================================================================
+
+lint:
+	ruff check src/ tests/
+
+format:
+	ruff format src/ tests/
+	ruff check --fix src/ tests/
+
+typecheck:
+	mypy src/
+
+# =============================================================================
+# Cleanup
+# =============================================================================
+
+clean:
+	rm -rf build/
+	rm -rf dist/
+	rm -rf *.egg-info/
+	rm -rf .pytest_cache/
+	rm -rf .mypy_cache/
+	rm -rf .ruff_cache/
+	rm -rf htmlcov/
+	rm -rf .coverage
+	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true

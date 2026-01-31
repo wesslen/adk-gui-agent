@@ -1,0 +1,88 @@
+version: "3.8"
+
+services:
+  # =============================================================================
+  # Arize Phoenix - Local Observability
+  # =============================================================================
+  phoenix:
+    image: arizephoenix/phoenix:latest
+    container_name: gui-agent-phoenix
+    ports:
+      - "6006:6006"   # Web UI
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+    environment:
+      - PHOENIX_WORKING_DIR=/data
+    volumes:
+      - phoenix_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # =============================================================================
+  # Playwright MCP Server
+  # =============================================================================
+  playwright-mcp:
+    image: mcr.microsoft.com/playwright:v1.49.0-noble
+    container_name: gui-agent-playwright
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    environment:
+      - DISPLAY=:99
+      - BROWSER_HEADLESS=${BROWSER_HEADLESS:-true}
+    volumes:
+      - ./playwright-mcp:/app
+      - playwright_cache:/root/.cache
+    command: >
+      bash -c "
+        npm install -g @anthropic-ai/mcp-server-playwright &&
+        npx @anthropic-ai/mcp-server-playwright --port 3000
+      "
+    # For headed mode, uncomment below and use X11 forwarding
+    # volumes:
+    #   - /tmp/.X11-unix:/tmp/.X11-unix
+    # environment:
+    #   - DISPLAY=${DISPLAY}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+    depends_on:
+      - phoenix
+
+  # =============================================================================
+  # Mock Form Website (for testing)
+  # =============================================================================
+  mock-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.mock
+    container_name: gui-agent-mock
+    ports:
+      - "8080:8080"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8080
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    profiles:
+      - testing  # Only start with: docker compose --profile testing up
+
+volumes:
+  phoenix_data:
+  playwright_cache:
+
+networks:
+  default:
+    name: gui-agent-network
