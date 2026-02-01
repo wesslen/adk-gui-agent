@@ -73,6 +73,11 @@ start-services:
 	@echo "  Phoenix UI: http://localhost:6006"
 	@echo "  Playwright MCP: http://localhost:8931"
 
+start-mock-server:
+	docker compose --profile testing up -d mock-server
+	@echo "Starting mock server..."
+	@echo "  Mock server: http://mockserver:8080"
+
 stop-services:
 	docker compose down
 
