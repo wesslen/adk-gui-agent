@@ -1,4 +1,4 @@
-.PHONY: help install install-dev setup-env start-services stop-services \
+.PHONY: help install install-dev install-uv setup-env start-services stop-services \
         run run-headless run-headed test test-fast test-integration \
         lint format typecheck mock-server clean
 
@@ -8,8 +8,9 @@ help:
 	@echo "==============================="
 	@echo ""
 	@echo "Setup:"
-	@echo "  make install        Install production dependencies"
-	@echo "  make install-dev    Install development dependencies"
+	@echo "  make install-uv     Install uv package manager (recommended)"
+	@echo "  make install        Install production dependencies (with uv)"
+	@echo "  make install-dev    Install development dependencies (with uv)"
 	@echo "  make setup-env      Copy .env.example to .env"
 	@echo ""
 	@echo "Services:"
@@ -41,11 +42,18 @@ help:
 # Setup
 # =============================================================================
 
-install:
-	pip install -e .
+install-uv:
+	@command -v uv >/dev/null 2>&1 || { \
+		echo "Installing uv..."; \
+		pip install uv; \
+	}
+	@echo "uv is installed"
 
-install-dev:
-	pip install -e ".[dev,mock-server]"
+install: install-uv
+	uv sync
+
+install-dev: install-uv
+	uv sync --extra dev --extra mock-server
 
 setup-env:
 	@if [ ! -f .env ]; then \
