@@ -1,12 +1,12 @@
 {
   "eval_set_id": "form_filling_basic_v1",
   "name": "Basic Form Filling Evaluation",
-  "description": "Tests for basic form filling capabilities on the simple contact form",
+  "description": "Tests for basic form filling capabilities using @playwright/mcp ref-based workflow",
   "eval_cases": [
     {
       "eval_case_id": "simple_form_complete",
       "name": "Complete Simple Contact Form",
-      "description": "Fill out all fields in the simple contact form",
+      "description": "Fill out all fields in the simple contact form using ref-based workflow",
       "conversation": [
         {
           "role": "user",
@@ -21,46 +21,56 @@
           }
         },
         {
+          "tool_name": "browser_snapshot",
+          "description": "Get accessibility tree with element refs"
+        },
+        {
           "tool_name": "browser_type",
           "arguments": {
-            "selector": "#first_name",
+            "ref": "DYNAMIC",
             "text": "John"
-          }
+          },
+          "description": "Fill first name using ref from snapshot"
         },
         {
           "tool_name": "browser_type",
           "arguments": {
-            "selector": "#last_name",
+            "ref": "DYNAMIC",
             "text": "Doe"
-          }
+          },
+          "description": "Fill last name using ref from snapshot"
         },
         {
           "tool_name": "browser_type",
           "arguments": {
-            "selector": "#email",
+            "ref": "DYNAMIC",
             "text": "john.doe@example.com"
-          }
+          },
+          "description": "Fill email using ref from snapshot"
         },
         {
           "tool_name": "browser_type",
           "arguments": {
-            "selector": "#phone",
+            "ref": "DYNAMIC",
             "text": "555-123-4567"
-          }
+          },
+          "description": "Fill phone using ref from snapshot"
         },
         {
-          "tool_name": "browser_select",
+          "tool_name": "browser_select_option",
           "arguments": {
-            "selector": "#subject",
-            "value": "general"
-          }
+            "ref": "DYNAMIC",
+            "values": ["general"]
+          },
+          "description": "Select subject dropdown using ref from snapshot"
         },
         {
           "tool_name": "browser_type",
           "arguments": {
-            "selector": "#message",
+            "ref": "DYNAMIC",
             "text": "This is a test message from the automated form filling agent."
-          }
+          },
+          "description": "Fill message using ref from snapshot"
         }
       ],
       "expected_response_keywords": [
@@ -71,7 +81,8 @@
       ],
       "criteria": {
         "tool_trajectory_match": "IN_ORDER",
-        "min_fields_filled": 6
+        "min_fields_filled": 6,
+        "must_include_tools": ["browser_navigate", "browser_snapshot", "browser_type", "browser_select_option"]
       }
     },
     {
@@ -89,6 +100,9 @@
           "tool_name": "browser_navigate"
         },
         {
+          "tool_name": "browser_snapshot"
+        },
+        {
           "tool_name": "browser_type"
         },
         {
@@ -97,13 +111,13 @@
       ],
       "criteria": {
         "tool_trajectory_match": "IN_ORDER",
-        "must_include_tools": ["browser_navigate", "browser_screenshot"]
+        "must_include_tools": ["browser_navigate", "browser_snapshot", "browser_screenshot"]
       }
     },
     {
       "eval_case_id": "simple_form_partial",
       "name": "Partial Form Fill",
-      "description": "Fill only required fields",
+      "description": "Fill only required fields using ref-based workflow",
       "conversation": [
         {
           "role": "user",
@@ -115,6 +129,9 @@
           "tool_name": "browser_navigate"
         },
         {
+          "tool_name": "browser_snapshot"
+        },
+        {
           "tool_name": "browser_type"
         }
       ],
@@ -124,7 +141,40 @@
       ],
       "criteria": {
         "tool_trajectory_match": "ANY_ORDER",
-        "min_fields_filled": 5
+        "min_fields_filled": 5,
+        "must_include_tools": ["browser_snapshot"]
+      }
+    },
+    {
+      "eval_case_id": "ref_workflow_validation",
+      "name": "Ref-Based Workflow Validation",
+      "description": "Verify agent follows snapshot-then-interact pattern",
+      "conversation": [
+        {
+          "role": "user",
+          "content": "Navigate to http://localhost:8080/simple and click on the first input field."
+        }
+      ],
+      "expected_tool_calls": [
+        {
+          "tool_name": "browser_navigate",
+          "arguments": {
+            "url": "http://localhost:8080/simple"
+          }
+        },
+        {
+          "tool_name": "browser_snapshot",
+          "description": "MUST get snapshot before any interaction"
+        },
+        {
+          "tool_name": "browser_click",
+          "description": "Click using ref from snapshot"
+        }
+      ],
+      "criteria": {
+        "tool_trajectory_match": "IN_ORDER",
+        "must_include_tools": ["browser_snapshot"],
+        "snapshot_before_interaction": true
       }
     }
   ],
@@ -134,6 +184,7 @@
       "final_response_match_v2"
     ],
     "trajectory_match_type": "IN_ORDER",
-    "timeout_seconds": 120
+    "timeout_seconds": 120,
+    "notes": "Using @playwright/mcp ref-based workflow. Refs are dynamic and assigned at runtime by browser_snapshot."
   }
 }
