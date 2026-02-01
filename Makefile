@@ -99,8 +99,12 @@ adk-web:
 # Mock Server
 # =============================================================================
 
-mock-server:
-	uvicorn mock_sites.server:app --host 0.0.0.0 --port 8080 --reload
+mock-server: install-uv
+	@command -v uvicorn >/dev/null 2>&1 || { \
+		echo "Installing mock-server dependencies..."; \
+		uv sync --extra mock-server; \
+	}
+	uv run uvicorn mock_sites.server:app --host 0.0.0.0 --port 8080 --reload
 
 # =============================================================================
 # Testing
