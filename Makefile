@@ -71,7 +71,7 @@ start-services:
 	docker compose up -d
 	@echo "Services starting..."
 	@echo "  Phoenix UI: http://localhost:6006"
-	@echo "  Playwright MCP: http://localhost:3000"
+	@echo "  Playwright MCP: http://localhost:8931"
 
 stop-services:
 	docker compose down
