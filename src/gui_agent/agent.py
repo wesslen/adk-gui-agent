@@ -14,6 +14,7 @@ from google.adk.agents import LlmAgent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.adk.tools.mcp_tool import McpToolset, SseConnectionParams
+from google.genai import types
 
 from gui_agent.config import get_settings
 from gui_agent.observability import TracingContext
@@ -28,6 +29,10 @@ logger = logging.getLogger(__name__)
 def create_playwright_toolset() -> McpToolset:
     """Create the Playwright MCP toolset.
 
+    Uses the official @playwright/mcp package which uses a ref-based approach:
+    1. Call browser_snapshot to get accessibility tree with element refs
+    2. Use ref parameter in subsequent tool calls (e.g., ref="e1")
+
     Returns:
         McpToolset configured to connect to the Playwright MCP server.
     """
@@ -37,16 +42,24 @@ def create_playwright_toolset() -> McpToolset:
         connection_params=SseConnectionParams(
             url=settings.playwright_mcp_url,
         ),
-        # Filter to only the tools we need for form filling
+        # Filter to tools available in @playwright/mcp
+        # See: https://github.com/microsoft/playwright-mcp
         tool_filter=[
+            # Navigation
             "browser_navigate",
+            "browser_go_back",
+            "browser_go_forward",
+            # Page state & content
+            "browser_snapshot",      # Returns accessibility tree with refs [ref=e1]
             "browser_screenshot",
+            # Interactions (all use ref parameter from snapshot)
             "browser_click",
             "browser_type",
             "browser_hover",
-            "browser_select",
-            "browser_get_text",
-            "browser_accessibility_tree",
+            "browser_select_option",  # For dropdowns
+            "browser_press_key",
+            # Utilities
+            "browser_wait_for",
         ],
     )
 
@@ -133,8 +146,8 @@ async def run_agent_task(
 
         session_id = str(uuid.uuid4())
 
-    # Create session
-    session = session_service.create_session(
+    # Create session (async in newer ADK versions)
+    await session_service.create_session(
         app_name="gui-agent",
         user_id=user_id,
         session_id=session_id,
@@ -151,19 +164,28 @@ async def run_agent_task(
     logger.info(f"Starting task: {task[:100]}...")
 
     # Run with tracing
+    # runner.run_async returns an async generator, iterate over it
+    # Create Content object from task string
+    user_message = types.Content(
+        role="user",
+        parts=[types.Part(text=task)]
+    )
+
     with TracingContext(settings):
-        response = await runner.run_async(
+        final_response = ""
+        async for event in runner.run_async(
             user_id=user_id,
             session_id=session_id,
-            new_message=task,
-        )
-
-    # Extract final response
-    final_response = ""
-    async for event in response:
-        if hasattr(event, "content") and event.content:
-            if hasattr(event.content, "text"):
-                final_response = event.content.text
+            new_message=user_message,
+        ):
+            # Extract text from various event types
+            if hasattr(event, "content") and event.content:
+                if hasattr(event.content, "parts"):
+                    for part in event.content.parts:
+                        if hasattr(part, "text") and part.text:
+                            final_response = part.text
+                elif hasattr(event.content, "text"):
+                    final_response = event.content.text
 
     logger.info(f"Task completed. Response length: {len(final_response)}")
     return final_response

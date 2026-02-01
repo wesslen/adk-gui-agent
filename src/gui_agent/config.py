@@ -44,10 +44,11 @@ class Settings(BaseSettings):
     model_name: str = Field(default="gemini-2.5-flash", alias="MODEL_NAME")
 
     # =========================================================================
-    # Playwright MCP Server
+    # Playwright MCP Server (@playwright/mcp - official Microsoft package)
+    # Default port is 8931, uses ref-based element interaction
     # =========================================================================
     playwright_mcp_url: str = Field(
-        default="http://localhost:3000/sse",
+        default="http://localhost:8931/sse",
         alias="PLAYWRIGHT_MCP_URL",
     )
     browser_headless: bool = Field(default=True, alias="BROWSER_HEADLESS")
