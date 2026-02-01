@@ -44,13 +44,15 @@ class TestSettings:
         monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
         monkeypatch.delenv("GOOGLE_CLOUD_PROJECT", raising=False)
         monkeypatch.setenv("GOOGLE_GENAI_USE_VERTEXAI", "TRUE")
+        # Disable .env file loading for this test
+        monkeypatch.setenv("PYDANTIC_SETTINGS_ENV_FILE", "")
 
         from gui_agent.config import Settings, get_settings
 
         get_settings.cache_clear()
 
         with pytest.raises(ValueError, match="GOOGLE_CLOUD_PROJECT must be set"):
-            Settings()
+            Settings(_env_file=None)
 
     def test_default_values(self, monkeypatch: pytest.MonkeyPatch):
         """Test default configuration values."""
@@ -62,7 +64,7 @@ class TestSettings:
         settings = get_settings()
 
         assert settings.model_name == "gemini-2.5-flash"
-        assert settings.playwright_mcp_url == "http://localhost:3000/sse"
+        assert settings.playwright_mcp_url == "http://localhost:8931/sse"
         assert settings.browser_headless is True
         assert settings.phoenix_port == 6006
         assert settings.max_agent_steps == 20
