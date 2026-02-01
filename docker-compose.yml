@@ -33,6 +33,7 @@ services:
       - "8931:8931"
     environment:
       - DISPLAY=:99
+      - PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
     volumes:
       - ./playwright-mcp:/app
       - playwright_cache:/root/.cache
