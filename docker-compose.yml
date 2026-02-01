@@ -23,32 +23,37 @@ services:
     restart: unless-stopped
 
   # =============================================================================
-  # Playwright MCP Server
+  # Playwright MCP Server (Official Microsoft @playwright/mcp)
   # =============================================================================
   playwright-mcp:
     image: mcr.microsoft.com/playwright:v1.49.0-noble
     container_name: gui-agent-playwright
     working_dir: /app
     ports:
-      - "3000:3000"
+      - "8931:8931"
     environment:
       - DISPLAY=:99
-      - BROWSER_HEADLESS=${BROWSER_HEADLESS:-true}
     volumes:
       - ./playwright-mcp:/app
       - playwright_cache:/root/.cache
     command: >
       bash -c "
-        npm install -g @anthropic-ai/mcp-server-playwright &&
-        npx @anthropic-ai/mcp-server-playwright --port 3000
+        npm install -g @playwright/mcp@latest &&
+        npx playwright install chromium &&
+        npx @playwright/mcp@latest --port 8931 --host 0.0.0.0 --headless
       "
-    # For headed mode, uncomment below and use X11 forwarding
+    # For headed mode, remove --headless and use X11 forwarding:
+    # command: >
+    #   bash -c "
+    #     npm install -g @playwright/mcp@latest &&
+    #     npx @playwright/mcp@latest --port 8931 --host 0.0.0.0
+    #   "
     # volumes:
     #   - /tmp/.X11-unix:/tmp/.X11-unix
     # environment:
     #   - DISPLAY=${DISPLAY}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8931/sse"]
       interval: 30s
       timeout: 10s
       retries: 5

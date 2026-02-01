@@ -1,12 +1,12 @@
 # GUI Agent Prototype
 
-A form-filling GUI agent built with Google's Agent Development Kit (ADK), using Playwright MCP tools and Arize Phoenix for observability.
+A form-filling GUI agent built with Google's Agent Development Kit (ADK), using the official Microsoft `@playwright/mcp` for browser automation and Arize Phoenix for observability.
 
 ## Features
 
 - **ADK Framework**: Built on Google's Agent Development Kit for structured agent development
 - **Gemini LLM**: Uses Gemini 2.5 Flash via Vertex AI or Google AI Studio
-- **Playwright MCP**: Browser automation through Model Context Protocol
+- **@playwright/mcp**: Official Microsoft Playwright MCP with ref-based element interaction
 - **Headless/Headed**: Works in GCP Cloud Shell (headless) or local dev (headed)
 - **Arize Phoenix**: OpenTelemetry-based observability and tracing
 - **Pytest Integration**: ADK evaluation format adapted for pytest regression tests
@@ -51,9 +51,13 @@ This will:
 
 ### Running the Agent
 
-1. **Start Playwright MCP server**:
+1. **Start Playwright MCP server** (official Microsoft `@playwright/mcp`):
    ```bash
-   npx @anthropic-ai/mcp-server-playwright --port 3000
+   # Headless mode (for GCP Cloud Shell / CI)
+   npx @playwright/mcp@latest --port 8931 --headless
+
+   # Headed mode (for local development - shows browser)
+   npx @playwright/mcp@latest --port 8931
    ```
 
 2. **Start Phoenix (optional, for tracing)**:
@@ -73,6 +77,40 @@ This will:
    # Or use make
    make run-headless
    ```
+
+## @playwright/mcp Ref-Based Workflow
+
+The official `@playwright/mcp` uses a **ref-based** approach for element interaction:
+
+1. **Get Snapshot**: Call `browser_snapshot` to get the accessibility tree with element refs
+2. **Find Refs**: Elements have refs like `[ref=e1]`, `[ref=e2]`, etc.
+3. **Use Refs**: Pass the ref to interaction tools like `browser_click`, `browser_type`
+
+### Example Workflow
+```
+1. browser_navigate(url="https://example.com/form")
+2. browser_snapshot()
+   # Returns: "- textbox 'First Name' [ref=e3]..."
+3. browser_type(ref="e3", text="John")
+4. browser_snapshot()  # Get updated refs
+5. browser_click(ref="e5")  # Submit button
+```
+
+### Available Tools
+
+| Tool | Parameters | Description |
+|------|------------|-------------|
+| `browser_navigate` | `url` | Navigate to URL |
+| `browser_snapshot` | - | Get accessibility tree with refs |
+| `browser_screenshot` | - | Take screenshot |
+| `browser_click` | `ref`, `button?`, `double_click?` | Click element |
+| `browser_type` | `ref`, `text`, `submit?` | Type into element |
+| `browser_hover` | `ref` | Hover over element |
+| `browser_select_option` | `ref`, `values[]` | Select dropdown option(s) |
+| `browser_press_key` | `key` | Press keyboard key |
+| `browser_wait_for` | `selector`, `state?` | Wait for element |
+| `browser_go_back` | - | Navigate back |
+| `browser_go_forward` | - | Navigate forward |
 
 ## Authentication
 
@@ -110,7 +148,7 @@ gui-agent/
 │   ├── config.py         # Pydantic settings with auth fallback
 │   ├── observability.py  # Phoenix/OTEL tracing setup
 │   ├── cli.py            # Command-line interface
-│   └── prompts/          # System prompts
+│   └── prompts/          # System prompts (ref-based workflow)
 ├── tests/
 │   ├── conftest.py       # Pytest fixtures
 │   ├── evalsets/         # ADK evaluation datasets
@@ -176,13 +214,16 @@ Tests use ADK's evaluation format adapted for pytest. See `tests/evalsets/` for 
       "eval_case_id": "simple_form_complete",
       "conversation": [{"role": "user", "content": "..."}],
       "expected_tool_calls": [
-        {"tool_name": "browser_navigate", "arguments": {...}},
-        {"tool_name": "browser_type", "arguments": {...}}
+        {"tool_name": "browser_navigate", "arguments": {"url": "..."}},
+        {"tool_name": "browser_snapshot"},
+        {"tool_name": "browser_type", "arguments": {"ref": "DYNAMIC", "text": "John"}}
       ]
     }
   ]
 }
 ```
+
+Note: `ref` values are marked as `"DYNAMIC"` since they are assigned at runtime by `browser_snapshot`.
 
 ## Observability
 
@@ -201,7 +242,7 @@ Traces include:
 
 ### MVP0 (Current)
 - [x] ADK agent with Gemini
-- [x] Playwright MCP integration
+- [x] @playwright/mcp integration (ref-based)
 - [x] Simple form filling
 - [x] Phoenix observability
 - [x] Basic pytest regression tests
@@ -224,11 +265,11 @@ Traces include:
 ### Playwright MCP not connecting
 
 ```bash
-# Check if server is running
-curl http://localhost:3000/health
+# Check if server is running (default port is 8931)
+curl http://localhost:8931/sse
 
 # Restart the server
-npx @anthropic-ai/mcp-server-playwright --port 3000
+npx @playwright/mcp@latest --port 8931 --headless
 ```
 
 ### Vertex AI authentication errors
