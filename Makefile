@@ -84,16 +84,16 @@ logs:
 # =============================================================================
 
 run:
-	python -m gui_agent.cli
+	uv run python -m gui_agent.cli
 
 run-headless:
-	BROWSER_HEADLESS=true python -m gui_agent.cli
+	BROWSER_HEADLESS=true uv run python -m gui_agent.cli
 
 run-headed:
-	BROWSER_HEADLESS=false python -m gui_agent.cli
+	BROWSER_HEADLESS=false uv run python -m gui_agent.cli
 
 adk-web:
-	adk web src/gui_agent
+	uv run adk web src/gui_agent
 
 # =============================================================================
 # Mock Server
@@ -111,33 +111,33 @@ mock-server: install-uv
 # =============================================================================
 
 test:
-	pytest tests/ -v
+	uv run pytest tests/ -v
 
 test-fast:
-	pytest tests/ -v -m "not slow and not integration"
+	uv run pytest tests/ -v -m "not slow and not integration"
 
 test-integration:
-	pytest tests/ -v -m "integration"
+	uv run pytest tests/ -v -m "integration"
 
 test-evalset:
-	pytest tests/ -v -m "evalset"
+	uv run pytest tests/ -v -m "evalset"
 
 test-cov:
-	pytest tests/ -v --cov=src/gui_agent --cov-report=html --cov-report=term
+	uv run pytest tests/ -v --cov=src/gui_agent --cov-report=html --cov-report=term
 
 # =============================================================================
 # Code Quality
 # =============================================================================
 
 lint:
-	ruff check src/ tests/
+	uv run ruff check src/ tests/
 
 format:
-	ruff format src/ tests/
-	ruff check --fix src/ tests/
+	uv run ruff format src/ tests/
+	uv run ruff check --fix src/ tests/
 
 typecheck:
-	mypy src/
+	uv run mypy src/
 
 # =============================================================================
 # Cleanup
