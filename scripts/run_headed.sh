@@ -66,11 +66,13 @@ if command -v docker &> /dev/null; then
     echo -e "   Phoenix UI: http://localhost:6006"
 fi
 
-# Check Playwright MCP
-if ! port_in_use 3000; then
-    echo -e "\n${YELLOW}⚠️  Playwright MCP not detected on port 3000${NC}"
-    echo -e "   For headed mode, run Playwright MCP locally:"
-    echo -e "   ${BLUE}npx @anthropic-ai/mcp-server-playwright --port 3000${NC}"
+# Check Playwright MCP (default port 8931 for @playwright/mcp)
+if ! port_in_use 8931; then
+    echo -e "\n${YELLOW}⚠️  Playwright MCP not detected on port 8931${NC}"
+    echo -e "   For headed mode (visible browser), run:"
+    echo -e "   ${BLUE}npx @playwright/mcp@latest --port 8931${NC}"
+    echo ""
+    echo -e "   For headless mode, add --headless flag"
     echo ""
     read -p "Press Enter to continue anyway, or Ctrl+C to exit..."
 fi

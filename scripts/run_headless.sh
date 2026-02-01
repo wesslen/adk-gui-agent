@@ -80,10 +80,10 @@ else
     export ENABLE_TRACING=false
 fi
 
-# Check for Playwright MCP
-if ! nc -z localhost 3000 2>/dev/null; then
-    echo -e "${YELLOW}⚠️  Playwright MCP not running on port 3000${NC}"
-    echo "   Start it with: npx @anthropic-ai/mcp-server-playwright --port 3000"
+# Check for Playwright MCP (default port 8931 for @playwright/mcp)
+if ! nc -z localhost 8931 2>/dev/null; then
+    echo -e "${YELLOW}⚠️  Playwright MCP not running on port 8931${NC}"
+    echo "   Start it with: npx @playwright/mcp@latest --port 8931 --headless"
     echo "   Or use Docker: docker compose up -d playwright-mcp"
 fi
 

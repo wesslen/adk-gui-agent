@@ -104,8 +104,8 @@ GOOGLE_CLOUD_LOCATION=us-central1
 # Model Configuration
 MODEL_NAME=gemini-2.5-flash
 
-# Playwright MCP Server (run separately)
-PLAYWRIGHT_MCP_URL=http://localhost:3000/sse
+# Playwright MCP Server (@playwright/mcp - default port 8931)
+PLAYWRIGHT_MCP_URL=http://localhost:8931/sse
 BROWSER_HEADLESS=true
 
 # Observability
@@ -136,8 +136,8 @@ echo "  Region: us-central1"
 echo "  Model: gemini-2.5-flash"
 echo ""
 echo "Next steps:"
-echo "  1. Start Playwright MCP server:"
-echo "     npx @anthropic-ai/mcp-server-playwright --port 3000"
+echo "  1. Start Playwright MCP server (official @playwright/mcp):"
+echo "     npx @playwright/mcp@latest --port 8931 --headless"
 echo ""
 echo "  2. (Optional) Start Phoenix for tracing:"
 echo "     docker compose up -d phoenix"
