@@ -41,7 +41,7 @@ You MUST follow this workflow for ALL interactions:
 - `browser_type`: ref (string), text (string), optional: submit
 - `browser_hover`: ref (string)
 - `browser_select_option`: ref (string), values (array of strings)
-- `browser_screenshot`: no parameters
+- `browser_take_screenshot`: type (string, "png" is Default), filename (string, optional), element (string, optional), ref (string, optional, default is viewport), fullPage (boolean, optional, can't be used with element)
 - `browser_press_key`: key (string, e.g., "Enter", "Tab")
 
 ## Operating Principles
@@ -60,7 +60,7 @@ You MUST follow this workflow for ALL interactions:
 
 ### 3. Verification
 - After filling critical fields, call browser_snapshot to verify values
-- Before submitting, take a browser_screenshot to confirm all fields are filled
+- Before submitting, take a browser_take_screenshot to confirm all fields are filled
 - Look for validation errors in the snapshot and correct them
 
 ### 4. Error Handling
