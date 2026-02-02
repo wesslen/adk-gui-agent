@@ -7,6 +7,8 @@ A form-filling GUI agent built with Google's Agent Development Kit (ADK), using 
 - **ADK Framework**: Built on Google's Agent Development Kit for structured agent development
 - **Gemini LLM**: Uses Gemini 2.5 Flash via Vertex AI or Google AI Studio
 - **@playwright/mcp**: Official Microsoft Playwright MCP with ref-based element interaction
+- **Docker Services**: Containerized Phoenix and Playwright MCP for easy setup
+- **uv Package Manager**: Fast, reliable Python dependency management
 - **Headless/Headed**: Works in GCP Cloud Shell (headless) or local dev (headed)
 - **Arize Phoenix**: OpenTelemetry-based observability and tracing
 - **Pytest Integration**: ADK evaluation format adapted for pytest regression tests
@@ -15,9 +17,10 @@ A form-filling GUI agent built with Google's Agent Development Kit (ADK), using 
 
 ### Prerequisites
 
-- Python 3.11+
-- Docker (for Phoenix and optional Playwright MCP container)
-- Node.js 18+ (for Playwright MCP)
+- Python 3.12+
+- `uv` package manager (recommended, auto-installed via Makefile)
+- Docker (for Phoenix and Playwright MCP container)
+- Node.js 18+ (for Playwright MCP, installed in Docker container)
 - GCP account with Vertex AI enabled (or Google AI Studio API key)
 
 ### Installation
@@ -26,11 +29,15 @@ A form-filling GUI agent built with Google's Agent Development Kit (ADK), using 
 # Clone and enter the project
 cd gui-agent
 
-# Install dependencies
-pip install -e ".[dev,mock-server]"
+# Install dependencies with uv (recommended)
+make install-dev
+
+# Or install uv and dependencies manually
+pip install uv
+uv sync --extra dev --extra mock-server
 
 # Copy and configure environment
-cp .env.example .env
+make setup-env
 # Edit .env with your credentials
 ```
 
@@ -51,31 +58,32 @@ This will:
 
 ### Running the Agent
 
-1. **Start Playwright MCP server** (official Microsoft `@playwright/mcp`):
+1. **Start all services** (Phoenix + Playwright MCP):
    ```bash
-   # Headless mode (for GCP Cloud Shell / CI)
-   npx @playwright/mcp@latest --port 8931 --headless
-
-   # Headed mode (for local development - shows browser)
-   npx @playwright/mcp@latest --port 8931
+   make start-services
+   # View Phoenix traces at http://localhost:6006
+   # Playwright MCP available at http://localhost:8931
    ```
 
-2. **Start Phoenix (optional, for tracing)**:
+   Or start services individually:
    ```bash
+   # Start only Phoenix
    docker compose up -d phoenix
-   # View traces at http://localhost:6006
+
+   # Start Playwright MCP
+   docker compose up -d playwright-mcp
    ```
 
-3. **Run the agent**:
+2. **Run the agent**:
    ```bash
-   # Interactive mode
-   ./scripts/run_headless.sh
-
-   # Single task
-   ./scripts/run_headless.sh "Navigate to example.com and take a screenshot"
-
-   # Or use make
+   # Interactive mode (headless)
    make run-headless
+
+   # Interactive mode (headed - local dev only)
+   make run-headed
+
+   # Or use scripts directly
+   ./scripts/run_headless.sh "Navigate to example.com and take a screenshot"
    ```
 
 ## @playwright/mcp Ref-Based Workflow
@@ -148,17 +156,27 @@ gui-agent/
 │   ├── config.py         # Pydantic settings with auth fallback
 │   ├── observability.py  # Phoenix/OTEL tracing setup
 │   ├── cli.py            # Command-line interface
-│   └── prompts/          # System prompts (ref-based workflow)
+│   └── prompts/
+│       └── system.py     # System prompts (ref-based workflow)
 ├── tests/
 │   ├── conftest.py       # Pytest fixtures
-│   ├── evalsets/         # ADK evaluation datasets
-│   └── test_*.py         # Test files
+│   ├── evalsets/
+│   │   └── form_filling/ # ADK evaluation datasets
+│   │       └── basic.evalset.json
+│   ├── test_agent.py     # Agent tests
+│   └── test_config.py    # Config tests
 ├── mock_sites/           # Test form websites
 │   ├── server.py         # FastAPI server
 │   └── templates/        # HTML forms
 ├── scripts/              # Runner scripts
-├── docker-compose.yml    # Phoenix + Playwright services
-└── Makefile             # Common commands
+│   ├── run_headless.sh
+│   ├── run_headed.sh
+│   └── setup_gcp.sh
+├── docker-compose.yml    # Phoenix + Playwright MCP + Mock server
+├── Makefile              # Common commands (uses uv)
+├── pyproject.toml        # Python dependencies
+├── README.md             # This file
+└── AGENTS.md             # Project context for AI agents
 ```
 
 ## Mock Test Forms
@@ -172,8 +190,12 @@ The project includes mock forms for testing:
 
 Start the mock server:
 ```bash
-make mock-server
+# Start mock server in Docker
+make start-mock-server
 # Access at http://localhost:8080
+
+# Or run locally with uv
+make mock-server
 ```
 
 ### Recommended Public Test Site
@@ -185,12 +207,14 @@ For "in-the-wild" testing, consider:
 
 ## Testing
 
-```bash
-# Run fast tests (no external services)
-make test-fast
+All test commands use `uv` for dependency management:
 
+```bash
 # Run all tests
 make test
+
+# Run fast tests (no external services)
+make test-fast
 
 # Run integration tests (requires services)
 make test-integration
@@ -198,13 +222,16 @@ make test-integration
 # Run ADK evaluation tests
 make test-evalset
 
-# With coverage
+# With coverage report
 make test-cov
+
+# Or run tests directly with uv
+uv run pytest tests/ -v
 ```
 
 ### Evaluation Format
 
-Tests use ADK's evaluation format adapted for pytest. See `tests/evalsets/` for examples:
+Tests use ADK's evaluation format adapted for pytest. See `tests/evalsets/form_filling/basic.evalset.json` for examples:
 
 ```json
 {
@@ -229,8 +256,8 @@ Note: `ref` values are marked as `"DYNAMIC"` since they are assigned at runtime 
 
 Traces are sent to Arize Phoenix via OpenTelemetry:
 
-1. Start Phoenix: `docker compose up -d phoenix`
-2. Run agent with tracing: `ENABLE_TRACING=true ./scripts/run_headless.sh`
+1. Start services: `make start-services`
+2. Run agent with tracing enabled (check `ENABLE_TRACING=true` in `.env`)
 3. View traces: http://localhost:6006
 
 Traces include:
@@ -241,12 +268,14 @@ Traces include:
 ## Roadmap
 
 ### MVP0 (Current)
-- [x] ADK agent with Gemini
+- [x] ADK agent with Gemini 2.5 Flash
 - [x] @playwright/mcp integration (ref-based)
+- [x] Docker-based service orchestration
 - [x] Simple form filling
 - [x] Phoenix observability
 - [x] Basic pytest regression tests
-- [x] Headless mode for GCP
+- [x] Headless mode for GCP Cloud Shell
+- [x] uv package manager integration
 
 ### MVP1 (Planned)
 - [ ] Complex multi-step forms
@@ -268,8 +297,11 @@ Traces include:
 # Check if server is running (default port is 8931)
 curl http://localhost:8931/sse
 
-# Restart the server
-npx @playwright/mcp@latest --port 8931 --headless
+# Restart the Docker service
+docker compose restart playwright-mcp
+
+# Check logs
+docker logs gui-agent-playwright
 ```
 
 ### Vertex AI authentication errors
@@ -291,8 +323,15 @@ gcloud services list --enabled | grep aiplatform
 # Check Phoenix is running
 docker compose logs phoenix
 
+# Check Phoenix health
+curl http://localhost:6006/health
+
 # Verify endpoint in .env
 PHOENIX_COLLECTOR_ENDPOINT=http://localhost:6006/v1/traces
+ENABLE_TRACING=true
+
+# Restart Phoenix
+docker compose restart phoenix
 ```
 
 ## License
