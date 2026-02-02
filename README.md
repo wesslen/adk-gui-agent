@@ -102,7 +102,7 @@ The official `@playwright/mcp` uses a **ref-based** approach for element interac
 |------|------------|-------------|
 | `browser_navigate` | `url` | Navigate to URL |
 | `browser_snapshot` | - | Get accessibility tree with refs |
-| `browser_screenshot` | - | Take screenshot |
+| `browser_take_screenshot` | `type`, `filename?`, `element?`, `ref?`, `fullPage?` | Take screenshot |
 | `browser_click` | `ref`, `button?`, `double_click?` | Click element |
 | `browser_type` | `ref`, `text`, `submit?` | Type into element |
 | `browser_hover` | `ref` | Hover over element |
