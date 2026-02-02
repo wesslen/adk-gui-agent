@@ -51,7 +51,7 @@ def create_playwright_toolset() -> McpToolset:
             "browser_go_forward",
             # Page state & content
             "browser_snapshot",      # Returns accessibility tree with refs [ref=e1]
-            "browser_screenshot",
+            "browser_take_screenshot",
             # Interactions (all use ref parameter from snapshot)
             "browser_click",
             "browser_type",
