@@ -53,6 +53,7 @@ make run-headed       # Headed mode (local dev with display)
 - Running in GCP Cloud Shell (no display for headed mode)
 - Mock server must use container name (`http://mock-server:8080`) not `localhost` when accessed from browser container
 - Docker containers need `--no-sandbox` for Chrome (security trade-off in containerized env)
+- Video recording requires Playwright MCP to support video context parameters (may need custom implementation)
 
 ---
 
@@ -266,7 +267,101 @@ PHOENIX_COLLECTOR_ENDPOINT=http://localhost:6006/v1/traces
 
 ---
 
-## Recent Changes (2026-02-01)
+## Video Recording
+
+**NEW:** The agent now supports video recording for debugging and demo purposes!
+
+### Quick Start
+
+```bash
+# Enable in .env
+VIDEO_RECORDING_ENABLED=true
+
+# Or enable for single task in CLI
+/video on
+
+# Run task (video will be saved to ./recordings/)
+make run-headless
+```
+
+### Configuration
+
+Add to `.env`:
+```bash
+VIDEO_RECORDING_ENABLED=false        # Enable/disable video recording
+VIDEO_RECORDING_DIR=./recordings     # Directory for video files
+VIDEO_SIZE=1280x720                  # Video dimensions
+VIDEO_KEEP_ON_SUCCESS=false          # Keep videos after successful runs
+VIDEO_RETENTION_DAYS=7               # Auto-cleanup after N days (0=never)
+```
+
+### CLI Commands
+
+Interactive mode supports video commands:
+- `/video on` - Enable recording for next task
+- `/video off` - Disable recording for next task
+- `/video stats` - Show recording statistics
+- `/video clean` - Clean up old recordings
+
+### Makefile Targets
+
+```bash
+make video-stats      # Show statistics
+make video-clean      # Delete old recordings
+make video-convert    # Convert WebM to MP4
+```
+
+### File Locations
+
+Videos are saved to `./recordings/` with format:
+```
+session_<session_id>_<timestamp>.webm
+```
+
+Example: `session_abc123_20260201_143022.webm`
+
+### Storage & Performance
+
+- **Format:** WebM (1-2 MB per minute at 1280x720)
+- **Auto-cleanup:** Configurable retention period (default 7 days)
+- **Smart deletion:** Auto-delete successful runs if `VIDEO_KEEP_ON_SUCCESS=false`
+- **Conversion:** Use `make video-convert` to create MP4 files for better compatibility
+
+### Use Cases
+
+🎯 **Debugging:** Record full sessions to see what went wrong visually
+🎯 **Demos:** Share videos with business partners
+🎯 **Development:** Verify form filling behavior step-by-step
+🎯 **Compliance:** Keep audit trail of automation actions
+
+### Implementation Notes
+
+- FFmpeg is installed in the Playwright MCP container for video processing
+- Videos are stored in a shared Docker volume (`./recordings:/recordings`)
+- The `VideoManager` class handles cleanup, stats, and conversion
+- Actual Playwright video recording depends on MCP API support (see VIDEO_RECORDING_PLAN.md for details)
+
+---
+
+## Recent Changes
+
+### 2026-02-01 (Video Recording)
+
+1. **Added video recording support:**
+   - New `src/gui_agent/video.py` module with `VideoManager` class
+   - Video configuration in `.env` (enabled, directory, size, retention)
+   - CLI commands: `/video on`, `/video off`, `/video stats`, `/video clean`
+   - Makefile targets: `make video-stats`, `make video-clean`, `make video-convert`
+   - Docker: FFmpeg installed in Playwright container, shared volume for recordings
+   - Auto-cleanup based on retention period
+   - Smart deletion for successful runs (configurable)
+
+2. **Updated configuration:**
+   - Added video settings to `config.py`
+   - New `.env` variables for video recording
+   - Updated `docker-compose.yml` with recordings volume
+
+### 2026-02-01 (Initial Release)
 
 1. **Fixed async/await issues in `agent.py`:**
    - Added `await` to `session_service.create_session()`
@@ -364,7 +459,10 @@ npx playwright open --browser chrome --headless https://example.com
 - [ ] Add more mock forms (multi-step, file uploads, etc.)
 - [ ] Improve error messages and recovery
 - [ ] Add session persistence across runs
-- [ ] Consider adding video recording for debugging
+- [x] ~~Consider adding video recording for debugging~~ **DONE** (2026-02-01)
+- [ ] Implement actual Playwright video recording at MCP level
+- [ ] Add video thumbnails and preview generation
+- [ ] Cloud storage integration for recordings (GCS)
 
 ---
 

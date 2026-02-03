@@ -35,13 +35,20 @@ services:
       - DISPLAY=:99
       - PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
       - PLAYWRIGHT_CHROMIUM_ARGS=--no-sandbox --disable-setuid-sandbox
+      # Video recording configuration
+      - VIDEO_RECORDING_ENABLED=${VIDEO_RECORDING_ENABLED:-false}
+      - VIDEO_RECORDING_DIR=/recordings
+      - VIDEO_SIZE=${VIDEO_SIZE:-1280x720}
     volumes:
       - ./playwright-mcp:/app
       - playwright_cache:/root/.cache
+      - ./recordings:/recordings
     command: >
       bash -c "
+        apt-get update && apt-get install -y ffmpeg &&
         npm install -g @playwright/mcp@latest &&
         npx playwright install chrome --with-deps &&
+        mkdir -p /recordings &&
         npx @playwright/mcp@latest --port 8931 --host 0.0.0.0 --headless --no-sandbox
       "
     # For headed mode, remove --headless and use X11 forwarding:

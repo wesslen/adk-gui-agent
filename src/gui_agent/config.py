@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import os
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
 from pydantic import Field, model_validator
@@ -76,6 +77,36 @@ class Settings(BaseSettings):
     mock_server_host: str = Field(default="localhost", alias="MOCK_SERVER_HOST")
     mock_server_port: int = Field(default=8080, alias="MOCK_SERVER_PORT")
 
+    # =========================================================================
+    # Video Recording
+    # =========================================================================
+    video_recording_enabled: bool = Field(
+        default=False,
+        alias="VIDEO_RECORDING_ENABLED",
+        description="Enable video recording for browser sessions"
+    )
+    video_recording_dir: str = Field(
+        default="./recordings",
+        alias="VIDEO_RECORDING_DIR",
+        description="Directory to save recordings"
+    )
+    video_size: str = Field(
+        default="1280x720",
+        alias="VIDEO_SIZE",
+        description="Video dimensions (widthxheight)"
+    )
+    video_keep_on_success: bool = Field(
+        default=False,
+        alias="VIDEO_KEEP_ON_SUCCESS",
+        description="Keep recordings after successful completion"
+    )
+    video_retention_days: int = Field(
+        default=7,
+        ge=0,
+        alias="VIDEO_RETENTION_DAYS",
+        description="Max days to retain recordings (0=forever)"
+    )
+
     @model_validator(mode="after")
     def validate_auth_config(self) -> "Settings":
         """Ensure valid authentication configuration."""
@@ -107,6 +138,27 @@ class Settings(BaseSettings):
     def phoenix_ui_url(self) -> str:
         """Return the Phoenix UI URL."""
         return f"http://{self.phoenix_host}:{self.phoenix_port}"
+
+    @property
+    def video_recording_path(self) -> Path:
+        """Get the absolute path to the recordings directory."""
+        return Path(self.video_recording_dir).resolve()
+
+    def get_video_config(self) -> dict | None:
+        """Get Playwright video configuration.
+
+        Returns:
+            Video config dict for Playwright, or None if disabled.
+        """
+        if not self.video_recording_enabled:
+            return None
+
+        width, height = self.video_size.split("x")
+
+        return {
+            "dir": "/recordings",  # Container path
+            "size": {"width": int(width), "height": int(height)},
+        }
 
     def configure_environment(self) -> None:
         """Set environment variables for ADK/genai library.

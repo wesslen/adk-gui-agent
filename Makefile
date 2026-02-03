@@ -1,6 +1,6 @@
 .PHONY: help install install-dev install-uv setup-env start-services stop-services \
         run run-headless run-headed test test-fast test-integration \
-        lint format typecheck mock-server clean
+        lint format typecheck mock-server clean video-stats video-clean video-convert
 
 # Default target
 help:
@@ -34,6 +34,11 @@ help:
 	@echo "  make lint           Run linter (ruff)"
 	@echo "  make format         Format code (ruff)"
 	@echo "  make typecheck      Run type checker (mypy)"
+	@echo ""
+	@echo "Video Recording:"
+	@echo "  make video-stats    Show video recording statistics"
+	@echo "  make video-clean    Clean up old recordings"
+	@echo "  make video-convert  Convert all WebM recordings to MP4"
 	@echo ""
 	@echo "Cleanup:"
 	@echo "  make clean          Remove build artifacts and caches"
@@ -143,6 +148,34 @@ format:
 
 typecheck:
 	uv run mypy src/
+
+# =============================================================================
+# Video Recording
+# =============================================================================
+
+video-stats:
+	@echo "📊 Video Recording Statistics"
+	@if [ -d "recordings" ]; then \
+		ls -lh recordings/ 2>/dev/null | grep "session_" || echo "No recordings found"; \
+		echo ""; \
+		uv run python -c "from gui_agent.video import VideoManager; from gui_agent.config import get_settings; stats = VideoManager(get_settings()).get_recording_stats(); print(f\"Total: {stats['count']} files, {stats['total_size_mb']} MB\")"; \
+	else \
+		echo "No recordings directory found"; \
+	fi
+
+video-clean:
+	@echo "🗑️  Cleaning old recordings..."
+	@uv run python -c "from gui_agent.video import VideoManager; from gui_agent.config import get_settings; deleted = VideoManager(get_settings()).cleanup_old_recordings(); print(f'Deleted {deleted} old recordings')"
+
+video-convert:
+	@echo "🎬 Converting WebM recordings to MP4..."
+	@for file in recordings/*.webm 2>/dev/null; do \
+		if [ -f "$$file" ]; then \
+			echo "Converting $$file..."; \
+			ffmpeg -i "$$file" -c:v libx264 -preset fast -crf 23 -c:a aac -b:a 128k "$${file%.webm}.mp4" -y 2>/dev/null && \
+			echo "✅ Created $${file%.webm}.mp4"; \
+		fi \
+	done || echo "No WebM files found or ffmpeg not available"
 
 # =============================================================================
 # Cleanup

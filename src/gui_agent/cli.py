@@ -10,6 +10,7 @@ import sys
 from gui_agent.agent import run_agent_task
 from gui_agent.config import get_settings
 from gui_agent.observability import TracingContext
+from gui_agent.video import VideoManager
 
 
 def setup_logging(verbose: bool = False) -> None:
@@ -39,6 +40,7 @@ async def interactive_mode() -> None:
     """Run the agent in interactive mode."""
     settings = get_settings()
     settings.configure_environment()
+    video_manager = VideoManager(settings)
 
     print("\n🤖 GUI Agent Interactive Mode")
     print("-" * 40)
@@ -46,10 +48,23 @@ async def interactive_mode() -> None:
     print(f"Auth: {settings.auth_mode}")
     print(f"Playwright MCP: {settings.playwright_mcp_url}")
     print(f"Phoenix UI: {settings.phoenix_ui_url}")
+    print(f"Video Recording: {'ENABLED' if settings.video_recording_enabled else 'DISABLED'}")
+
+    if settings.video_recording_enabled:
+        stats = video_manager.get_recording_stats()
+        print(f"Recordings: {stats['count']} files, {stats['total_size_mb']} MB")
+
     print("-" * 40)
-    print("Type 'quit' or 'exit' to stop")
-    print("Type 'config' to show configuration")
+    print("Commands:")
+    print("  quit/exit       - Exit the program")
+    print("  config          - Show configuration")
+    print("  /video on       - Enable recording for next task")
+    print("  /video off      - Disable recording for next task")
+    print("  /video stats    - Show recording statistics")
+    print("  /video clean    - Clean up old recordings")
     print()
+
+    video_override = None  # None = use settings, True/False = override
 
     with TracingContext(settings):
         while True:
@@ -67,9 +82,37 @@ async def interactive_mode() -> None:
                     print_config(settings)
                     continue
 
+                # Handle video commands
+                if task.lower() == "/video on":
+                    video_override = True
+                    print("✅ Video recording enabled for next task\n")
+                    continue
+
+                if task.lower() == "/video off":
+                    video_override = False
+                    print("❌ Video recording disabled for next task\n")
+                    continue
+
+                if task.lower() == "/video stats":
+                    stats = video_manager.get_recording_stats()
+                    print(f"\n📊 Recording Statistics:")
+                    print(f"  Count: {stats['count']}")
+                    print(f"  Total Size: {stats['total_size_mb']} MB")
+                    print(f"  Oldest: {stats['oldest']}")
+                    print(f"  Newest: {stats['newest']}\n")
+                    continue
+
+                if task.lower() == "/video clean":
+                    deleted = video_manager.cleanup_old_recordings()
+                    print(f"🗑️  Deleted {deleted} old recordings\n")
+                    continue
+
                 print("\n⏳ Processing...\n")
-                result = await run_agent_task(task)
+                result = await run_agent_task(task, enable_video=video_override)
                 print(f"\n✅ Result:\n{result}\n")
+
+                # Reset override after use
+                video_override = None
 
             except KeyboardInterrupt:
                 print("\n\nInterrupted. Goodbye!")

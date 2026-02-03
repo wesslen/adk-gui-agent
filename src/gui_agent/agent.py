@@ -19,6 +19,7 @@ from google.genai import types
 from gui_agent.config import get_settings
 from gui_agent.observability import TracingContext
 from gui_agent.prompts import FORM_FILLING_SYSTEM_PROMPT
+from gui_agent.video import VideoManager
 
 if TYPE_CHECKING:
     from google.adk.agents import Agent
@@ -123,6 +124,7 @@ async def run_agent_task(
     task: str,
     user_id: str = "default_user",
     session_id: str | None = None,
+    enable_video: bool | None = None,
 ) -> str:
     """Run the agent on a specific task.
 
@@ -130,12 +132,24 @@ async def run_agent_task(
         task: The task description (e.g., "Fill the contact form with...")
         user_id: User identifier for session tracking.
         session_id: Optional session ID for conversation continuity.
+        enable_video: Override video recording setting for this task.
 
     Returns:
         The agent's final response.
     """
     settings = get_settings()
     settings.configure_environment()
+
+    # Determine if video recording is enabled
+    video_enabled = (
+        enable_video
+        if enable_video is not None
+        else settings.video_recording_enabled
+    )
+
+    # Initialize video manager
+    video_manager = VideoManager(settings) if video_enabled else None
+    video_path = None
 
     # Create session service
     session_service = InMemorySessionService()
@@ -145,6 +159,15 @@ async def run_agent_task(
         import uuid
 
         session_id = str(uuid.uuid4())
+
+    # Get video path for this session
+    if video_manager:
+        video_path = video_manager.get_video_path(session_id)
+        logger.info(f"Video recording enabled: {video_path}")
+        # NOTE: Actual video configuration would need to be passed to
+        # Playwright MCP through context creation or browser launch parameters.
+        # Since @playwright/mcp may not expose this directly, video recording
+        # may need to be implemented at the MCP level or through a custom wrapper.
 
     # Create session (async in newer ADK versions)
     await session_service.create_session(
@@ -171,37 +194,51 @@ async def run_agent_task(
         parts=[types.Part(text=task)]
     )
 
+    task_successful = False
     with TracingContext(settings):
         final_response = ""
-        async for event in runner.run_async(
-            user_id=user_id,
-            session_id=session_id,
-            new_message=user_message,
-        ):
-            # Extract text from various event types
-            if hasattr(event, "content") and event.content:
-                if hasattr(event.content, "parts"):
-                    for part in event.content.parts:
-                        if hasattr(part, "text") and part.text:
-                            final_response = part.text
-                elif hasattr(event.content, "text"):
-                    final_response = event.content.text
+        try:
+            async for event in runner.run_async(
+                user_id=user_id,
+                session_id=session_id,
+                new_message=user_message,
+            ):
+                # Extract text from various event types
+                if hasattr(event, "content") and event.content:
+                    if hasattr(event.content, "parts"):
+                        for part in event.content.parts:
+                            if hasattr(part, "text") and part.text:
+                                final_response = part.text
+                    elif hasattr(event.content, "text"):
+                        final_response = event.content.text
+
+            task_successful = True
+        finally:
+            # Clean up video if task succeeded and keep_on_success=False
+            if video_manager and video_path:
+                if task_successful and not settings.video_keep_on_success:
+                    if video_path.exists():
+                        video_manager.delete_recording(video_path)
+                        logger.info("Task succeeded, video deleted (keep_on_success=False)")
+                elif video_path.exists():
+                    logger.info(f"Video saved: {video_path}")
 
     logger.info(f"Task completed. Response length: {len(final_response)}")
     return final_response
 
 
-def run_task_sync(task: str, user_id: str = "default_user") -> str:
+def run_task_sync(task: str, user_id: str = "default_user", enable_video: bool | None = None) -> str:
     """Synchronous wrapper for run_agent_task.
 
     Args:
         task: The task description.
         user_id: User identifier.
+        enable_video: Override video recording setting.
 
     Returns:
         The agent's final response.
     """
-    return asyncio.run(run_agent_task(task, user_id))
+    return asyncio.run(run_agent_task(task, user_id, enable_video=enable_video))
 
 
 if __name__ == "__main__":

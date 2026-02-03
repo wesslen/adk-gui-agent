@@ -1,0 +1,7 @@
+# Ignore all video files
+*.webm
+*.mp4
+
+# But keep the directory
+!.gitkeep
+!.gitignore
