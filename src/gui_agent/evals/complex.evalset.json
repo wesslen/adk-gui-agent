@@ -1,0 +1,327 @@
+{
+  "eval_set_id": "complex_form_v1",
+  "name": "Complex Employee Onboarding Form Evaluation",
+  "description": "Comprehensive evaluation for /complex multi-step onboarding form: happy paths and failure mode coverage across 3 steps",
+  "eval_cases": [
+    {
+      "eval_case_id": "complex_happy_full_onboarding",
+      "name": "Happy Path: Complete 3-Step Onboarding (Office Worker)",
+      "description": "Fill all 3 steps for an office-based employee — no conditional fields triggered",
+      "conversation": [
+        {
+          "role": "user",
+          "content": "Navigate to http://localhost:8080/complex and complete the full employee onboarding form with this data:\n\nStep 1 - Personal Info:\n- First Name: Jane\n- Middle Name: Marie\n- Last Name: Smith\n- Email: jane.smith@company.com\n- Phone: 555-987-6543\n- Date of Birth: 1990-05-15\n- SSN Last 4: 1234\n- Street Address: 123 Main Street\n- City: San Francisco\n- State: California\n- ZIP Code: 94102\n\nStep 2 - Employment:\n- Department: Engineering\n- Job Title: Senior Software Engineer\n- Start Date: 2024-02-01\n- Manager: Sarah Johnson\n- Employment Type: Full-time\n- Work Location: Office\n\nStep 3 - Documents:\n- Emergency Contact Name: Bob Smith\n- Emergency Contact Phone: 555-111-2222\n- Emergency Contact Relationship: Spouse\n- Check all acknowledgement boxes (Handbook, NDA, IT Policies)\n- Digital Signature: Jane Marie Smith\n\nDo not submit the final form."
+        }
+      ],
+      "expected_tool_calls": [
+        {"tool_name": "browser_navigate", "arguments": {"url": "http://localhost:8080/complex"}},
+        {"tool_name": "browser_snapshot"},
+        {"tool_name": "browser_type", "arguments": {"text": "Jane"}, "description": "first_name"},
+        {"tool_name": "browser_type", "arguments": {"text": "Marie"}, "description": "middle_name"},
+        {"tool_name": "browser_type", "arguments": {"text": "Smith"}, "description": "last_name"},
+        {"tool_name": "browser_type", "arguments": {"text": "jane.smith@company.com"}, "description": "email"},
+        {"tool_name": "browser_type", "arguments": {"text": "555-987-6543"}, "description": "phone"},
+        {"tool_name": "browser_type", "arguments": {"text": "1990-05-15"}, "description": "dob"},
+        {"tool_name": "browser_type", "arguments": {"text": "1234"}, "description": "ssn_last4"},
+        {"tool_name": "browser_type", "arguments": {"text": "123 Main Street"}, "description": "street_address"},
+        {"tool_name": "browser_type", "arguments": {"text": "San Francisco"}, "description": "city"},
+        {"tool_name": "browser_select_option", "arguments": {"values": ["CA"]}, "description": "state"},
+        {"tool_name": "browser_type", "arguments": {"text": "94102"}, "description": "zip_code"},
+        {"tool_name": "browser_click", "description": "Click 'Next: Employment' button"},
+        {"tool_name": "browser_snapshot", "description": "Re-snapshot after step change"},
+        {"tool_name": "browser_select_option", "arguments": {"values": ["engineering"]}, "description": "department"},
+        {"tool_name": "browser_type", "arguments": {"text": "Senior Software Engineer"}, "description": "job_title"},
+        {"tool_name": "browser_type", "arguments": {"text": "2024-02-01"}, "description": "start_date"},
+        {"tool_name": "browser_select_option", "arguments": {"values": ["sarah.johnson"]}, "description": "manager"},
+        {"tool_name": "browser_click", "description": "Select full-time radio"},
+        {"tool_name": "browser_click", "description": "Select office radio"},
+        {"tool_name": "browser_click", "description": "Click 'Next: Documents' button"},
+        {"tool_name": "browser_snapshot", "description": "Re-snapshot after step change"},
+        {"tool_name": "browser_type", "arguments": {"text": "Bob Smith"}, "description": "emergency_contact_name"},
+        {"tool_name": "browser_type", "arguments": {"text": "555-111-2222"}, "description": "emergency_contact_phone"},
+        {"tool_name": "browser_select_option", "arguments": {"values": ["spouse"]}, "description": "emergency_contact_relationship"},
+        {"tool_name": "browser_click", "description": "Check agree_handbook"},
+        {"tool_name": "browser_click", "description": "Check agree_nda"},
+        {"tool_name": "browser_click", "description": "Check agree_policies"},
+        {"tool_name": "browser_type", "arguments": {"text": "Jane Marie Smith"}, "description": "digital_signature"}
+      ],
+      "expected_response_keywords": ["filled", "onboarding", "Jane", "Smith"],
+      "criteria": {
+        "tool_trajectory_match": "IN_ORDER",
+        "min_fields_filled": 20,
+        "must_include_tools": ["browser_navigate", "browser_snapshot", "browser_type", "browser_select_option", "browser_click"]
+      }
+    },
+    {
+      "eval_case_id": "complex_happy_remote_with_equipment",
+      "name": "Happy Path: Remote Worker With Conditional Equipment Fields",
+      "description": "Fill all steps with Remote work location, verifying conditional equipment checkboxes appear and are filled",
+      "conversation": [
+        {
+          "role": "user",
+          "content": "Navigate to http://localhost:8080/complex and fill the onboarding form:\n\nStep 1 - Personal Info:\n- First Name: Alex\n- Last Name: Rivera\n- Email: alex.rivera@company.com\n- Phone: 555-222-3333\n- Date of Birth: 1985-11-20\n- SSN Last 4: 5678\n- Street Address: 456 Oak Avenue\n- City: New York\n- State: New York\n- ZIP Code: 10001\n\nStep 2 - Employment:\n- Department: Product\n- Job Title: Product Manager\n- Start Date: 2024-03-15\n- Manager: Michael Chen\n- Employment Type: Full-time\n- Work Location: Remote\n- Equipment Needed: Monitor, Ergonomic Chair\n\nStep 3 - Documents:\n- Emergency Contact Name: Maria Rivera\n- Emergency Contact Phone: 555-444-5555\n- Emergency Contact Relationship: Parent\n- Check all acknowledgement boxes\n- Digital Signature: Alex Rivera\n\nDo not submit."
+        }
+      ],
+      "expected_tool_calls": [
+        {"tool_name": "browser_navigate", "arguments": {"url": "http://localhost:8080/complex"}},
+        {"tool_name": "browser_snapshot"},
+        {"tool_name": "browser_type", "arguments": {"text": "Alex"}, "description": "first_name"},
+        {"tool_name": "browser_type", "arguments": {"text": "Rivera"}, "description": "last_name"},
+        {"tool_name": "browser_type", "arguments": {"text": "alex.rivera@company.com"}},
+        {"tool_name": "browser_type", "arguments": {"text": "555-222-3333"}},
+        {"tool_name": "browser_type", "arguments": {"text": "1985-11-20"}},
+        {"tool_name": "browser_type", "arguments": {"text": "5678"}},
+        {"tool_name": "browser_type", "arguments": {"text": "456 Oak Avenue"}},
+        {"tool_name": "browser_type", "arguments": {"text": "New York"}},
+        {"tool_name": "browser_select_option", "arguments": {"values": ["NY"]}},
+        {"tool_name": "browser_type", "arguments": {"text": "10001"}},
+        {"tool_name": "browser_click", "description": "Click Next to Step 2"},
+        {"tool_name": "browser_snapshot"},
+        {"tool_name": "browser_select_option", "arguments": {"values": ["product"]}},
+        {"tool_name": "browser_type", "arguments": {"text": "Product Manager"}},
+        {"tool_name": "browser_type", "arguments": {"text": "2024-03-15"}},
+        {"tool_name": "browser_select_option", "arguments": {"values": ["michael.chen"]}},
+        {"tool_name": "browser_click", "description": "Select full-time radio"},
+        {"tool_name": "browser_click", "description": "Select remote radio — triggers conditional equipment fields"},
+        {"tool_name": "browser_snapshot", "description": "Re-snapshot to see newly visible equipment checkboxes"},
+        {"tool_name": "browser_click", "description": "Check monitor"},
+        {"tool_name": "browser_click", "description": "Check ergonomic chair"},
+        {"tool_name": "browser_click", "description": "Click Next to Step 3"},
+        {"tool_name": "browser_snapshot"},
+        {"tool_name": "browser_type", "arguments": {"text": "Maria Rivera"}},
+        {"tool_name": "browser_type", "arguments": {"text": "555-444-5555"}},
+        {"tool_name": "browser_select_option", "arguments": {"values": ["parent"]}},
+        {"tool_name": "browser_click", "description": "Check agree_handbook"},
+        {"tool_name": "browser_click", "description": "Check agree_nda"},
+        {"tool_name": "browser_click", "description": "Check agree_policies"},
+        {"tool_name": "browser_type", "arguments": {"text": "Alex Rivera"}}
+      ],
+      "expected_response_keywords": ["filled", "remote", "equipment", "Alex"],
+      "criteria": {
+        "tool_trajectory_match": "IN_ORDER",
+        "min_fields_filled": 18,
+        "conditional_fields_filled": true,
+        "must_include_tools": ["browser_navigate", "browser_snapshot", "browser_type", "browser_select_option", "browser_click"]
+      }
+    },
+    {
+      "eval_case_id": "complex_fail_step_navigation",
+      "name": "Failure Mode: Must Click Next Before Step 2 Fields",
+      "description": "Agent must navigate steps sequentially — Step 2 fields are display:none until Next is clicked",
+      "conversation": [
+        {
+          "role": "user",
+          "content": "Navigate to http://localhost:8080/complex. Fill in First Name: Test, Last Name: User, Email: test@test.com, Phone: 555-000-0000, Date of Birth: 2000-01-01, SSN Last 4: 0000, Address: 1 Test St, City: Austin, State: Texas, ZIP: 73301. Then advance to Step 2 and select Engineering as the department."
+        }
+      ],
+      "expected_tool_calls": [
+        {"tool_name": "browser_navigate"},
+        {"tool_name": "browser_snapshot"},
+        {"tool_name": "browser_type", "arguments": {"text": "Test"}},
+        {"tool_name": "browser_type", "arguments": {"text": "User"}},
+        {"tool_name": "browser_type", "arguments": {"text": "test@test.com"}},
+        {"tool_name": "browser_type", "arguments": {"text": "555-000-0000"}},
+        {"tool_name": "browser_type", "arguments": {"text": "2000-01-01"}},
+        {"tool_name": "browser_type", "arguments": {"text": "0000"}},
+        {"tool_name": "browser_type", "arguments": {"text": "1 Test St"}},
+        {"tool_name": "browser_type", "arguments": {"text": "Austin"}},
+        {"tool_name": "browser_select_option", "arguments": {"values": ["TX"]}},
+        {"tool_name": "browser_type", "arguments": {"text": "73301"}},
+        {"tool_name": "browser_click", "description": "MUST click Next before accessing Step 2 fields"},
+        {"tool_name": "browser_snapshot", "description": "Re-snapshot to see Step 2 form section"},
+        {"tool_name": "browser_select_option", "arguments": {"values": ["engineering"]}}
+      ],
+      "criteria": {
+        "tool_trajectory_match": "IN_ORDER",
+        "step_navigation_required": true,
+        "must_include_tools": ["browser_click", "browser_snapshot", "browser_select_option"]
+      }
+    },
+    {
+      "eval_case_id": "complex_fail_radio_must_use_click",
+      "name": "Failure Mode: Radio Buttons Require click Not type",
+      "description": "Agent must use browser_click (not browser_type) for radio button inputs like employment_type and work_location",
+      "conversation": [
+        {
+          "role": "user",
+          "content": "Navigate to http://localhost:8080/complex. Fill Step 1 with: First Name: Test, Last Name: Radio, Email: test@radio.com, Phone: 555-000-0001, DOB: 1995-06-15, SSN: 9999, Address: 2 Test St, City: Miami, State: Florida, ZIP: 33101. Go to Step 2 and select Full-time for Employment Type and Office for Work Location."
+        }
+      ],
+      "expected_tool_calls": [
+        {"tool_name": "browser_navigate"},
+        {"tool_name": "browser_snapshot"},
+        {"tool_name": "browser_type", "description": "Fill Step 1 fields"},
+        {"tool_name": "browser_click", "description": "Click Next to Step 2"},
+        {"tool_name": "browser_snapshot"},
+        {"tool_name": "browser_click", "description": "Click full-time radio — must be browser_click not browser_type"},
+        {"tool_name": "browser_click", "description": "Click office radio — must be browser_click not browser_type"}
+      ],
+      "criteria": {
+        "tool_trajectory_match": "IN_ORDER",
+        "radio_interaction_method": "browser_click",
+        "must_not_use_for_radio": ["browser_type", "browser_select_option"]
+      }
+    },
+    {
+      "eval_case_id": "complex_fail_conditional_field_blindness",
+      "name": "Failure Mode: Must Fill Conditional Equipment Fields When Visible",
+      "description": "After selecting Remote or Hybrid, equipment checkboxes appear — agent must not ignore them when data is provided",
+      "conversation": [
+        {
+          "role": "user",
+          "content": "Navigate to http://localhost:8080/complex. Skip to Step 2 (fill Step 1 with minimal valid data: First Name: A, Last Name: B, Email: a@b.com, Phone: 555-000-0002, DOB: 1990-01-01, SSN: 1111, Address: 3 St, City: LA, State: California, ZIP: 90001). On Step 2, set Department: Design, Job Title: Designer, Start Date: 2024-06-01, Manager: Emily Rodriguez, Employment Type: Full-time, Work Location: Hybrid. Then select Monitor and Standing Desk from the equipment options that appear."
+        }
+      ],
+      "expected_tool_calls": [
+        {"tool_name": "browser_navigate"},
+        {"tool_name": "browser_snapshot"},
+        {"tool_name": "browser_type", "description": "Fill Step 1 fields"},
+        {"tool_name": "browser_click", "description": "Click Next"},
+        {"tool_name": "browser_snapshot"},
+        {"tool_name": "browser_select_option", "arguments": {"values": ["design"]}},
+        {"tool_name": "browser_type", "arguments": {"text": "Designer"}},
+        {"tool_name": "browser_type", "arguments": {"text": "2024-06-01"}},
+        {"tool_name": "browser_select_option", "arguments": {"values": ["emily.rodriguez"]}},
+        {"tool_name": "browser_click", "description": "Select full-time radio"},
+        {"tool_name": "browser_click", "description": "Select hybrid radio — triggers conditional fields"},
+        {"tool_name": "browser_snapshot", "description": "Re-snapshot to discover conditional equipment checkboxes"},
+        {"tool_name": "browser_click", "description": "Check monitor checkbox"},
+        {"tool_name": "browser_click", "description": "Check standing desk checkbox"}
+      ],
+      "criteria": {
+        "tool_trajectory_match": "IN_ORDER",
+        "conditional_fields_filled": true,
+        "must_include_tools": ["browser_snapshot", "browser_click"]
+      }
+    },
+    {
+      "eval_case_id": "complex_fail_checkbox_must_use_click",
+      "name": "Failure Mode: Checkboxes Require click Not type or select_option",
+      "description": "Agent must use browser_click for acknowledgement checkboxes (handbook, NDA, policies), not browser_type or browser_select_option",
+      "conversation": [
+        {
+          "role": "user",
+          "content": "Navigate to http://localhost:8080/complex. Assume Steps 1-2 are already filled. Navigate to Step 3 (click Next twice if needed) and check all three acknowledgement boxes: Employee Handbook, NDA, and IT Security Policies."
+        }
+      ],
+      "expected_tool_calls": [
+        {"tool_name": "browser_navigate"},
+        {"tool_name": "browser_snapshot"},
+        {"tool_name": "browser_click", "description": "Navigate to Step 3 if needed"},
+        {"tool_name": "browser_snapshot"},
+        {"tool_name": "browser_click", "description": "Check Employee Handbook — must be browser_click"},
+        {"tool_name": "browser_click", "description": "Check NDA — must be browser_click"},
+        {"tool_name": "browser_click", "description": "Check IT Security Policies — must be browser_click"}
+      ],
+      "criteria": {
+        "tool_trajectory_match": "IN_ORDER",
+        "checkbox_interaction_method": "browser_click",
+        "must_not_use_for_checkbox": ["browser_type", "browser_select_option"]
+      }
+    },
+    {
+      "eval_case_id": "complex_fail_date_format",
+      "name": "Failure Mode: Date Inputs Must Use YYYY-MM-DD Format",
+      "description": "Agent must type dates as YYYY-MM-DD for <input type='date'> — not 'May 15, 1990' or 'MM/DD/YYYY'",
+      "conversation": [
+        {
+          "role": "user",
+          "content": "Navigate to http://localhost:8080/complex and fill in the Date of Birth field with May 15th, 1990, and after advancing to Step 2, set the Start Date to March 1st, 2024."
+        }
+      ],
+      "expected_tool_calls": [
+        {"tool_name": "browser_navigate"},
+        {"tool_name": "browser_snapshot"},
+        {"tool_name": "browser_type", "arguments": {"text": "1990-05-15"}, "description": "DOB — must be YYYY-MM-DD despite natural language input"},
+        {"tool_name": "browser_click", "description": "Navigate to Step 2"},
+        {"tool_name": "browser_snapshot"},
+        {"tool_name": "browser_type", "arguments": {"text": "2024-03-01"}, "description": "Start date — must be YYYY-MM-DD"}
+      ],
+      "criteria": {
+        "tool_trajectory_match": "IN_ORDER",
+        "date_format": "YYYY-MM-DD",
+        "must_include_tools": ["browser_type"]
+      }
+    },
+    {
+      "eval_case_id": "complex_fail_cross_step_stale_refs",
+      "name": "Failure Mode: Must Re-snapshot After Step Navigation",
+      "description": "Agent must call browser_snapshot after clicking Next/Back — refs from a previous step are stale because the DOM changed",
+      "conversation": [
+        {
+          "role": "user",
+          "content": "Navigate to http://localhost:8080/complex. Fill Step 1: First Name: X, Last Name: Y, Email: x@y.com, Phone: 555-000-0003, DOB: 1990-01-01, SSN: 2222, Address: 5 St, City: Dallas, State: Texas, ZIP: 75001. Click Next. Then fill the Department field with Engineering."
+        }
+      ],
+      "expected_tool_calls": [
+        {"tool_name": "browser_navigate"},
+        {"tool_name": "browser_snapshot"},
+        {"tool_name": "browser_type", "description": "Fill Step 1 fields"},
+        {"tool_name": "browser_click", "description": "Click Next"},
+        {"tool_name": "browser_snapshot", "description": "MUST re-snapshot — Step 2 DOM is new, old refs are stale"},
+        {"tool_name": "browser_select_option", "arguments": {"values": ["engineering"]}}
+      ],
+      "criteria": {
+        "tool_trajectory_match": "IN_ORDER",
+        "re_snapshot_after_navigation": true,
+        "must_include_tools": ["browser_snapshot"]
+      }
+    },
+    {
+      "eval_case_id": "complex_fail_validation_gate",
+      "name": "Failure Mode: Required Fields Before Step Advance",
+      "description": "Step 1 has JS validation — nextStep() blocks if required fields are empty. Agent must fill required fields before clicking Next.",
+      "conversation": [
+        {
+          "role": "user",
+          "content": "Navigate to http://localhost:8080/complex. Fill in only First Name: Val and Last Name: Gate, then try to proceed to Step 2. If blocked, fill the remaining required fields (Email, Phone, DOB, SSN, Address, City, State, ZIP) and try again."
+        }
+      ],
+      "expected_tool_calls": [
+        {"tool_name": "browser_navigate"},
+        {"tool_name": "browser_snapshot"},
+        {"tool_name": "browser_type", "arguments": {"text": "Val"}},
+        {"tool_name": "browser_type", "arguments": {"text": "Gate"}},
+        {"tool_name": "browser_type", "description": "Fill remaining required fields after validation blocks"},
+        {"tool_name": "browser_click", "description": "Click Next — should succeed after all required fields filled"},
+        {"tool_name": "browser_snapshot", "description": "Confirm Step 2 is now visible"}
+      ],
+      "criteria": {
+        "tool_trajectory_match": "IN_ORDER",
+        "validation_gate_respected": true,
+        "must_include_tools": ["browser_type", "browser_click", "browser_snapshot"]
+      }
+    },
+    {
+      "eval_case_id": "complex_fail_select_value_not_label",
+      "name": "Failure Mode: Dropdowns Must Use value Attribute Not Display Text",
+      "description": "Agent must pass option value ('engineering') not display text ('Engineering') to browser_select_option",
+      "conversation": [
+        {
+          "role": "user",
+          "content": "Navigate to http://localhost:8080/complex. Fill Step 1 minimally and advance to Step 2. Set Department to Human Resources and Manager to Emily Rodriguez."
+        }
+      ],
+      "expected_tool_calls": [
+        {"tool_name": "browser_navigate"},
+        {"tool_name": "browser_snapshot"},
+        {"tool_name": "browser_type", "description": "Fill Step 1 required fields"},
+        {"tool_name": "browser_click", "description": "Click Next"},
+        {"tool_name": "browser_snapshot"},
+        {"tool_name": "browser_select_option", "arguments": {"values": ["hr"]}, "description": "Must use value 'hr' not label 'Human Resources'"},
+        {"tool_name": "browser_select_option", "arguments": {"values": ["emily.rodriguez"]}, "description": "Must use value 'emily.rodriguez' not label 'Emily Rodriguez'"}
+      ],
+      "criteria": {
+        "tool_trajectory_match": "IN_ORDER",
+        "select_uses_value_attr": true,
+        "must_include_tools": ["browser_select_option"]
+      }
+    }
+  ],
+  "evaluation_config": {
+    "metrics": ["tool_trajectory_avg_score", "final_response_match_v2"],
+    "trajectory_match_type": "IN_ORDER",
+    "timeout_seconds": 300,
+    "notes": "Complex form has 3 steps with JS-powered navigation. Refs are dynamic. Step transitions change visible DOM sections, invalidating previous refs. Conditional fields (equipment checkboxes) only appear after Remote/Hybrid selection."
+  }
+}

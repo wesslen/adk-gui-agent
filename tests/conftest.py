@@ -134,16 +134,16 @@ def mock_server_process() -> Generator[subprocess.Popen | None, None, None]:
 
 @pytest.fixture
 def evalset_dir() -> Path:
-    """Return the path to evaluation sets."""
-    return Path(__file__).parent / "evalsets"
+    """Return the path to evaluation sets (co-located with agent source)."""
+    return Path(__file__).parent.parent / "src" / "gui_agent" / "evals"
 
 
 @pytest.fixture
 def load_evalset(evalset_dir: Path):
     """Factory fixture to load evaluation sets."""
 
-    def _load(category: str, name: str) -> dict[str, Any]:
-        evalset_path = evalset_dir / category / f"{name}.evalset.json"
+    def _load(name: str) -> dict[str, Any]:
+        evalset_path = evalset_dir / f"{name}.evalset.json"
         if not evalset_path.exists():
             raise FileNotFoundError(f"EvalSet not found: {evalset_path}")
         return json.loads(evalset_path.read_text())

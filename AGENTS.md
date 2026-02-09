@@ -98,6 +98,10 @@ make run-headed       # Headed mode (local dev with display)
 - `src/gui_agent/config.py` - Settings management (Pydantic)
 - `src/gui_agent/prompts.py` - System prompts for the agent
 - `src/gui_agent/observability.py` - Phoenix tracing setup
+- `src/gui_agent/evals/` - ADK evaluation sets (co-located with agent)
+  - `basic.evalset.json` - Legacy baseline (4 cases, simple form)
+  - `simple.evalset.json` - Simple form: 2 happy paths + 6 failure modes
+  - `complex.evalset.json` - Complex form: 2 happy paths + 8 failure modes
 
 ### Docker
 - `Dockerfile.mock` - Mock form server (FastAPI + uvicorn)
@@ -217,6 +221,49 @@ http://mock-server:8080/simple
 http://mock-server:8080/complex
 ```
 
+### ADK Evaluation Sets
+
+Eval sets live alongside the agent source at `src/gui_agent/evals/` (following ADK convention).
+
+| File | Target | Cases | Description |
+|------|--------|-------|-------------|
+| `basic.evalset.json` | `/simple` | 4 | Legacy baseline cases |
+| `simple.evalset.json` | `/simple` | 8 | 2 happy paths + 6 failure modes |
+| `complex.evalset.json` | `/complex` | 10 | 2 happy paths + 8 failure modes |
+
+**Simple form failure modes tested:**
+
+| Failure Mode | Eval Case ID | Criterion |
+|---|---|---|
+| Snapshot before interact | `simple_fail_snapshot_before_interact` | `browser_snapshot` precedes any `browser_type`/`browser_click` |
+| Stale ref after select | `simple_fail_stale_ref_after_select` | Re-snapshot after `browser_select_option` |
+| Dropdown must use select_option | `simple_fail_dropdown_must_use_select` | `browser_select_option` (not `browser_type`) for `<select>` |
+| Required field coverage | `simple_fail_required_field_coverage` | All 5 required fields filled |
+| No premature submit | `simple_fail_no_premature_submit` | No `browser_click` on Submit when told not to |
+| Field-data mapping | `simple_fail_field_data_mapping` | Data maps to correct fields regardless of input order |
+
+**Complex form failure modes tested:**
+
+| Failure Mode | Eval Case ID | Criterion |
+|---|---|---|
+| Step navigation | `complex_fail_step_navigation` | `browser_click` (Next) before Step 2 fields |
+| Radio uses click | `complex_fail_radio_must_use_click` | `browser_click` (not `browser_type`) for radios |
+| Conditional fields | `complex_fail_conditional_field_blindness` | Equipment checkboxes filled after Remote/Hybrid |
+| Checkbox uses click | `complex_fail_checkbox_must_use_click` | `browser_click` for checkboxes |
+| Date format | `complex_fail_date_format` | YYYY-MM-DD for `<input type="date">` |
+| Cross-step stale refs | `complex_fail_cross_step_stale_refs` | Re-snapshot after clicking Next |
+| Validation gate | `complex_fail_validation_gate` | Fill required fields before Next |
+| Select value vs label | `complex_fail_select_value_not_label` | Option `value` attr, not display text |
+
+```bash
+# Run eval tests
+make test                          # All tests
+make test-fast                     # Skip slow/integration
+pytest -m evalset                  # Eval set tests only
+pytest tests/test_agent.py -k "Simple"   # Simple form evals
+pytest tests/test_agent.py -k "Complex"  # Complex form evals
+```
+
 ### Example Tasks
 ```python
 # External site
@@ -266,8 +313,20 @@ PHOENIX_COLLECTOR_ENDPOINT=http://localhost:6006/v1/traces
 
 ---
 
-## Recent Changes (2026-02-01)
+## Recent Changes
 
+### 2026-02-09: ADK Eval Test Coverage Overhaul
+1. **Moved eval sets to `src/gui_agent/evals/`** (co-located with agent per ADK convention)
+2. **Created `simple.evalset.json`** — 8 cases (2 happy paths + 6 failure modes)
+3. **Created `complex.evalset.json`** — 10 cases (2 happy paths + 8 failure modes)
+4. **Rewrote `test_agent.py` eval validation:**
+   - Parametrized loader tests across all 3 evalsets
+   - Added structural validation (unique IDs, known tools, required fields)
+   - Added per-form test classes (`TestSimpleFormEvalCases`, `TestComplexFormEvalCases`)
+   - Validates trajectory ordering, criteria flags, and ISO date formats
+5. **Updated `conftest.py`** — `load_evalset` now takes flat name, points to `src/gui_agent/evals/`
+
+### 2026-02-01: Initial Working Agent
 1. **Fixed async/await issues in `agent.py`:**
    - Added `await` to `session_service.create_session()`
    - Changed `runner.run_async()` from `await` to `async for`
@@ -357,8 +416,11 @@ npx playwright open --browser chrome --headless https://example.com
 
 ## Next Steps / Roadmap
 
-- [ ] Add more comprehensive tests (unit, integration)
-- [ ] Document complex form filling scenarios
+- [x] Add comprehensive eval test coverage (simple + complex forms)
+- [x] Document complex form filling scenarios and failure modes
+- [ ] Wire eval cases to live integration tests (run agent against mock server)
+- [ ] Add ADK user simulation eval cases (multi-turn ConversationScenario format)
+- [ ] Implement programmatic evaluation of custom criteria (field_data_mapping, must_not_include_actions)
 - [ ] Add retry logic for flaky network requests
 - [ ] Consider alternatives to `--no-sandbox` for production
 - [ ] Add more mock forms (multi-step, file uploads, etc.)

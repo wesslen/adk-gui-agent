@@ -81,9 +81,12 @@ class TestSystemPrompts:
 class TestEvalSetLoader:
     """Tests for loading and validating eval sets."""
 
-    def test_load_basic_evalset(self, evalset_dir: Path):
-        """Test loading the basic form filling eval set."""
-        evalset_path = evalset_dir / "form_filling" / "basic.evalset.json"
+    EVALSET_NAMES = ["basic", "simple", "complex"]
+
+    @pytest.mark.parametrize("name", EVALSET_NAMES)
+    def test_load_evalset(self, evalset_dir: Path, name: str):
+        """Test loading each eval set file."""
+        evalset_path = evalset_dir / f"{name}.evalset.json"
 
         assert evalset_path.exists(), f"EvalSet not found: {evalset_path}"
 
@@ -94,51 +97,264 @@ class TestEvalSetLoader:
         assert "eval_cases" in evalset
         assert len(evalset["eval_cases"]) > 0
 
-    def test_evalset_structure(self, load_evalset):
-        """Test that eval set has required structure."""
-        evalset = load_evalset("form_filling", "basic")
+    @pytest.mark.parametrize("name", EVALSET_NAMES)
+    def test_evalset_structure(self, load_evalset, name: str):
+        """Test that each eval set has required ADK structure."""
+        evalset = load_evalset(name)
+
+        assert "evaluation_config" in evalset
 
         for case in evalset["eval_cases"]:
-            assert "eval_case_id" in case
-            assert "conversation" in case
+            # Required fields per ADK format
+            assert "eval_case_id" in case, f"Missing eval_case_id in {name}"
+            assert "conversation" in case, f"Missing conversation in {case.get('eval_case_id')}"
             assert len(case["conversation"]) > 0
             assert case["conversation"][0]["role"] == "user"
 
+            # Every case must define expected_tool_calls and criteria
+            assert "expected_tool_calls" in case, (
+                f"Missing expected_tool_calls in {case['eval_case_id']}"
+            )
+            assert "criteria" in case, (
+                f"Missing criteria in {case['eval_case_id']}"
+            )
+
+    @pytest.mark.parametrize("name", EVALSET_NAMES)
+    def test_evalset_ids_unique(self, load_evalset, name: str):
+        """Test that eval case IDs are unique within each eval set."""
+        evalset = load_evalset(name)
+        case_ids = [c["eval_case_id"] for c in evalset["eval_cases"]]
+        assert len(case_ids) == len(set(case_ids)), f"Duplicate case IDs in {name}: {case_ids}"
+
+    @pytest.mark.parametrize("name", EVALSET_NAMES)
+    def test_evalset_tool_calls_valid(self, load_evalset, name: str):
+        """Test that all expected_tool_calls reference known Playwright MCP tools."""
+        known_tools = {
+            "browser_navigate", "browser_go_back", "browser_go_forward",
+            "browser_snapshot", "browser_take_screenshot",
+            "browser_click", "browser_type", "browser_hover",
+            "browser_select_option", "browser_press_key", "browser_wait_for",
+        }
+
+        evalset = load_evalset(name)
+        for case in evalset["eval_cases"]:
+            for tc in case["expected_tool_calls"]:
+                assert tc["tool_name"] in known_tools, (
+                    f"Unknown tool '{tc['tool_name']}' in {case['eval_case_id']} ({name})"
+                )
+
+
+# =============================================================================
+# Simple Form EvalSet Tests
+# =============================================================================
+
 
 @pytest.mark.evalset
-class TestFormFillingEvalCases:
-    """Eval-based tests for form filling scenarios.
+class TestSimpleFormEvalCases:
+    """Validate the simple contact form eval set (happy paths + failure modes)."""
 
-    These tests validate the expected behavior defined in evalsets.
-    They are marked as evalset tests and can be run separately.
-    """
+    def test_case_count(self, load_evalset):
+        """Simple evalset should have 8 cases: 2 happy + 6 failure modes."""
+        evalset = load_evalset("simple")
+        assert len(evalset["eval_cases"]) == 8
 
-    def test_simple_form_complete_case_exists(self, load_evalset):
-        """Verify the simple form complete test case exists and is valid."""
-        evalset = load_evalset("form_filling", "basic")
-
+    def test_happy_paths_exist(self, load_evalset):
+        """Both happy path cases must exist."""
+        evalset = load_evalset("simple")
         case_ids = [c["eval_case_id"] for c in evalset["eval_cases"]]
-        assert "simple_form_complete" in case_ids
+        assert "simple_happy_complete" in case_ids
+        assert "simple_happy_required_only" in case_ids
 
-        case = next(c for c in evalset["eval_cases"] if c["eval_case_id"] == "simple_form_complete")
+    def test_failure_modes_exist(self, load_evalset):
+        """All 6 failure mode cases must exist."""
+        evalset = load_evalset("simple")
+        case_ids = [c["eval_case_id"] for c in evalset["eval_cases"]]
+        expected_failures = [
+            "simple_fail_snapshot_before_interact",
+            "simple_fail_stale_ref_after_select",
+            "simple_fail_dropdown_must_use_select",
+            "simple_fail_required_field_coverage",
+            "simple_fail_no_premature_submit",
+            "simple_fail_field_data_mapping",
+        ]
+        for fid in expected_failures:
+            assert fid in case_ids, f"Missing failure mode case: {fid}"
 
-        # Verify expected tool calls
-        assert "expected_tool_calls" in case
-        tool_names = [tc["tool_name"] for tc in case["expected_tool_calls"]]
-        assert "browser_navigate" in tool_names
-        assert "browser_type" in tool_names
+    def test_happy_complete_has_all_fields(self, load_evalset):
+        """Happy complete case should expect all 6 fields filled."""
+        evalset = load_evalset("simple")
+        case = next(c for c in evalset["eval_cases"] if c["eval_case_id"] == "simple_happy_complete")
+        assert case["criteria"]["min_fields_filled"] == 6
+        assert "browser_take_screenshot" in case["criteria"]["must_include_tools"]
 
-    def test_screenshot_verification_case(self, load_evalset):
-        """Verify screenshot verification test case."""
-        evalset = load_evalset("form_filling", "basic")
-
+    def test_happy_required_only_skips_phone(self, load_evalset):
+        """Happy required-only case should expect 5 fields (no phone)."""
+        evalset = load_evalset("simple")
         case = next(
-            (c for c in evalset["eval_cases"] if c["eval_case_id"] == "simple_form_screenshot_verify"),
-            None,
+            c for c in evalset["eval_cases"] if c["eval_case_id"] == "simple_happy_required_only"
+        )
+        assert case["criteria"]["min_fields_filled"] == 5
+
+    def test_dropdown_case_requires_select_option(self, load_evalset):
+        """Dropdown failure mode must include browser_select_option in must_include_tools."""
+        evalset = load_evalset("simple")
+        case = next(
+            c for c in evalset["eval_cases"]
+            if c["eval_case_id"] == "simple_fail_dropdown_must_use_select"
+        )
+        assert "browser_select_option" in case["criteria"]["must_include_tools"]
+        assert "browser_type" in case["criteria"]["must_not_use_for_select"]
+
+    def test_no_submit_case_has_guard(self, load_evalset):
+        """Premature submit failure mode must define must_not_include_actions."""
+        evalset = load_evalset("simple")
+        case = next(
+            c for c in evalset["eval_cases"]
+            if c["eval_case_id"] == "simple_fail_no_premature_submit"
+        )
+        assert "must_not_include_actions" in case["criteria"]
+
+    def test_snapshot_before_interact_is_in_order(self, load_evalset):
+        """Snapshot-before-interact must use IN_ORDER to enforce sequence."""
+        evalset = load_evalset("simple")
+        case = next(
+            c for c in evalset["eval_cases"]
+            if c["eval_case_id"] == "simple_fail_snapshot_before_interact"
+        )
+        assert case["criteria"]["tool_trajectory_match"] == "IN_ORDER"
+        tool_names = [tc["tool_name"] for tc in case["expected_tool_calls"]]
+        snap_idx = tool_names.index("browser_snapshot")
+        type_idx = tool_names.index("browser_type")
+        assert snap_idx < type_idx, "Snapshot must precede first browser_type"
+
+
+# =============================================================================
+# Complex Form EvalSet Tests
+# =============================================================================
+
+
+@pytest.mark.evalset
+class TestComplexFormEvalCases:
+    """Validate the complex onboarding form eval set (happy paths + failure modes)."""
+
+    def test_case_count(self, load_evalset):
+        """Complex evalset should have 10 cases: 2 happy + 8 failure modes."""
+        evalset = load_evalset("complex")
+        assert len(evalset["eval_cases"]) == 10
+
+    def test_happy_paths_exist(self, load_evalset):
+        """Both happy path cases must exist."""
+        evalset = load_evalset("complex")
+        case_ids = [c["eval_case_id"] for c in evalset["eval_cases"]]
+        assert "complex_happy_full_onboarding" in case_ids
+        assert "complex_happy_remote_with_equipment" in case_ids
+
+    def test_failure_modes_exist(self, load_evalset):
+        """All 8 failure mode cases must exist."""
+        evalset = load_evalset("complex")
+        case_ids = [c["eval_case_id"] for c in evalset["eval_cases"]]
+        expected_failures = [
+            "complex_fail_step_navigation",
+            "complex_fail_radio_must_use_click",
+            "complex_fail_conditional_field_blindness",
+            "complex_fail_checkbox_must_use_click",
+            "complex_fail_date_format",
+            "complex_fail_cross_step_stale_refs",
+            "complex_fail_validation_gate",
+            "complex_fail_select_value_not_label",
+        ]
+        for fid in expected_failures:
+            assert fid in case_ids, f"Missing failure mode case: {fid}"
+
+    def test_full_onboarding_spans_all_steps(self, load_evalset):
+        """Happy full onboarding must include tool calls across all 3 steps."""
+        evalset = load_evalset("complex")
+        case = next(
+            c for c in evalset["eval_cases"]
+            if c["eval_case_id"] == "complex_happy_full_onboarding"
+        )
+        tool_names = [tc["tool_name"] for tc in case["expected_tool_calls"]]
+
+        # Must have multiple snapshots (at least one per step transition)
+        snapshot_count = tool_names.count("browser_snapshot")
+        assert snapshot_count >= 3, f"Expected >=3 snapshots for 3 steps, got {snapshot_count}"
+
+        # Must have click calls (Next buttons + radio buttons + checkboxes)
+        click_count = tool_names.count("browser_click")
+        assert click_count >= 5, f"Expected >=5 clicks (Next + radios + checkboxes), got {click_count}"
+
+        assert case["criteria"]["min_fields_filled"] >= 20
+
+    def test_remote_happy_path_has_conditional_flag(self, load_evalset):
+        """Remote worker happy path must assert conditional_fields_filled."""
+        evalset = load_evalset("complex")
+        case = next(
+            c for c in evalset["eval_cases"]
+            if c["eval_case_id"] == "complex_happy_remote_with_equipment"
+        )
+        assert case["criteria"].get("conditional_fields_filled") is True
+
+    def test_step_navigation_enforces_click_before_step2(self, load_evalset):
+        """Step navigation failure mode must have browser_click before Step 2 select_option."""
+        evalset = load_evalset("complex")
+        case = next(
+            c for c in evalset["eval_cases"]
+            if c["eval_case_id"] == "complex_fail_step_navigation"
+        )
+        tool_names = [tc["tool_name"] for tc in case["expected_tool_calls"]]
+        # Find last browser_click (the Next button) and first browser_select_option after it
+        last_click_idx = len(tool_names) - 1 - tool_names[::-1].index("browser_click")
+        last_select_idx = len(tool_names) - 1 - tool_names[::-1].index("browser_select_option")
+        assert last_click_idx < last_select_idx, "Next click must precede Step 2 select"
+
+    def test_radio_case_forbids_type(self, load_evalset):
+        """Radio button failure mode must forbid browser_type for radios."""
+        evalset = load_evalset("complex")
+        case = next(
+            c for c in evalset["eval_cases"]
+            if c["eval_case_id"] == "complex_fail_radio_must_use_click"
+        )
+        assert "browser_type" in case["criteria"]["must_not_use_for_radio"]
+
+    def test_date_format_uses_iso(self, load_evalset):
+        """Date format failure mode must expect YYYY-MM-DD strings in browser_type args."""
+        evalset = load_evalset("complex")
+        case = next(
+            c for c in evalset["eval_cases"]
+            if c["eval_case_id"] == "complex_fail_date_format"
+        )
+        date_types = [
+            tc for tc in case["expected_tool_calls"]
+            if tc["tool_name"] == "browser_type" and "arguments" in tc
+            and tc["arguments"].get("text", "")[:4].isdigit()
+        ]
+        import re
+        iso_pattern = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+        for tc in date_types:
+            assert iso_pattern.match(tc["arguments"]["text"]), (
+                f"Expected ISO date, got: {tc['arguments']['text']}"
+            )
+
+    def test_cross_step_refs_requires_resnapshot(self, load_evalset):
+        """Cross-step stale refs must have snapshot between click(Next) and next interaction."""
+        evalset = load_evalset("complex")
+        case = next(
+            c for c in evalset["eval_cases"]
+            if c["eval_case_id"] == "complex_fail_cross_step_stale_refs"
+        )
+        tool_names = [tc["tool_name"] for tc in case["expected_tool_calls"]]
+        # After the last browser_click, the very next call should be browser_snapshot
+        click_indices = [i for i, t in enumerate(tool_names) if t == "browser_click"]
+        assert len(click_indices) > 0
+        last_click = click_indices[-1]
+        assert tool_names[last_click + 1] == "browser_snapshot", (
+            "browser_snapshot must immediately follow the Next button click"
         )
 
-        assert case is not None
-        assert "browser_screenshot" in [tc["tool_name"] for tc in case["expected_tool_calls"]]
+    def test_timeout_is_adequate(self, load_evalset):
+        """Complex form has 3 steps — timeout should be >= 300s."""
+        evalset = load_evalset("complex")
+        assert evalset["evaluation_config"]["timeout_seconds"] >= 300
 
 
 # =============================================================================

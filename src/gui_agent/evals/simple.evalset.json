@@ -1,0 +1,220 @@
+{
+  "eval_set_id": "simple_form_v1",
+  "name": "Simple Contact Form Evaluation",
+  "description": "Comprehensive evaluation for /simple contact form: happy paths and failure mode coverage",
+  "eval_cases": [
+    {
+      "eval_case_id": "simple_happy_complete",
+      "name": "Happy Path: Fill All Fields",
+      "description": "Fill every field (including optional phone) using correct ref-based workflow",
+      "conversation": [
+        {
+          "role": "user",
+          "content": "Navigate to http://localhost:8080/simple and fill out the contact form with this information:\n- First Name: John\n- Last Name: Doe\n- Email: john.doe@example.com\n- Phone: 555-123-4567\n- Subject: General Inquiry\n- Message: This is a test message from the automated form filling agent.\n\nDo not submit the form. Take a screenshot when done to verify."
+        }
+      ],
+      "expected_tool_calls": [
+        {"tool_name": "browser_navigate", "arguments": {"url": "http://localhost:8080/simple"}},
+        {"tool_name": "browser_snapshot"},
+        {"tool_name": "browser_type", "arguments": {"text": "John"}},
+        {"tool_name": "browser_type", "arguments": {"text": "Doe"}},
+        {"tool_name": "browser_type", "arguments": {"text": "john.doe@example.com"}},
+        {"tool_name": "browser_type", "arguments": {"text": "555-123-4567"}},
+        {"tool_name": "browser_select_option", "arguments": {"values": ["general"]}},
+        {"tool_name": "browser_type", "arguments": {"text": "This is a test message from the automated form filling agent."}},
+        {"tool_name": "browser_take_screenshot"}
+      ],
+      "expected_response_keywords": ["filled", "form", "John", "Doe"],
+      "criteria": {
+        "tool_trajectory_match": "IN_ORDER",
+        "min_fields_filled": 6,
+        "must_include_tools": ["browser_navigate", "browser_snapshot", "browser_type", "browser_select_option", "browser_take_screenshot"]
+      }
+    },
+    {
+      "eval_case_id": "simple_happy_required_only",
+      "name": "Happy Path: Required Fields Only",
+      "description": "Fill only the five required fields, skip optional phone",
+      "conversation": [
+        {
+          "role": "user",
+          "content": "Navigate to http://localhost:8080/simple and fill only the required fields:\n- First Name: Alice\n- Last Name: Wonder\n- Email: alice@wonder.land\n- Subject: Other\n- Message: Required fields only test.\n\nDo not submit. Verify with a screenshot."
+        }
+      ],
+      "expected_tool_calls": [
+        {"tool_name": "browser_navigate", "arguments": {"url": "http://localhost:8080/simple"}},
+        {"tool_name": "browser_snapshot"},
+        {"tool_name": "browser_type", "arguments": {"text": "Alice"}},
+        {"tool_name": "browser_type", "arguments": {"text": "Wonder"}},
+        {"tool_name": "browser_type", "arguments": {"text": "alice@wonder.land"}},
+        {"tool_name": "browser_select_option", "arguments": {"values": ["other"]}},
+        {"tool_name": "browser_type", "arguments": {"text": "Required fields only test."}},
+        {"tool_name": "browser_take_screenshot"}
+      ],
+      "expected_response_keywords": ["filled", "required"],
+      "criteria": {
+        "tool_trajectory_match": "IN_ORDER",
+        "min_fields_filled": 5,
+        "must_include_tools": ["browser_navigate", "browser_snapshot", "browser_type", "browser_select_option"]
+      }
+    },
+    {
+      "eval_case_id": "simple_fail_snapshot_before_interact",
+      "name": "Failure Mode: Snapshot Before Interaction",
+      "description": "Agent must call browser_snapshot before any browser_type or browser_click",
+      "conversation": [
+        {
+          "role": "user",
+          "content": "Navigate to http://localhost:8080/simple and type 'John' into the First Name field."
+        }
+      ],
+      "expected_tool_calls": [
+        {"tool_name": "browser_navigate", "arguments": {"url": "http://localhost:8080/simple"}},
+        {"tool_name": "browser_snapshot", "description": "MUST happen before any browser_type or browser_click"},
+        {"tool_name": "browser_type", "arguments": {"text": "John"}}
+      ],
+      "criteria": {
+        "tool_trajectory_match": "IN_ORDER",
+        "snapshot_before_interaction": true,
+        "must_include_tools": ["browser_snapshot"]
+      }
+    },
+    {
+      "eval_case_id": "simple_fail_stale_ref_after_select",
+      "name": "Failure Mode: Re-snapshot After Dropdown Selection",
+      "description": "Agent must call browser_snapshot again after browser_select_option before interacting with other elements",
+      "conversation": [
+        {
+          "role": "user",
+          "content": "Navigate to http://localhost:8080/simple. First select 'Technical Support' from the Subject dropdown, then fill in the Message field with 'I need help with my account'."
+        }
+      ],
+      "expected_tool_calls": [
+        {"tool_name": "browser_navigate"},
+        {"tool_name": "browser_snapshot"},
+        {"tool_name": "browser_select_option", "arguments": {"values": ["support"]}},
+        {"tool_name": "browser_snapshot", "description": "Re-snapshot after DOM change from dropdown selection"},
+        {"tool_name": "browser_type", "arguments": {"text": "I need help with my account"}}
+      ],
+      "criteria": {
+        "tool_trajectory_match": "IN_ORDER",
+        "re_snapshot_after_interaction": true,
+        "must_include_tools": ["browser_snapshot", "browser_select_option", "browser_type"]
+      }
+    },
+    {
+      "eval_case_id": "simple_fail_dropdown_must_use_select",
+      "name": "Failure Mode: Dropdown Uses select_option Not type",
+      "description": "Agent must use browser_select_option (not browser_type) for the Subject <select> element",
+      "conversation": [
+        {
+          "role": "user",
+          "content": "Navigate to http://localhost:8080/simple and choose 'Feedback' from the Subject dropdown."
+        }
+      ],
+      "expected_tool_calls": [
+        {"tool_name": "browser_navigate", "arguments": {"url": "http://localhost:8080/simple"}},
+        {"tool_name": "browser_snapshot"},
+        {"tool_name": "browser_select_option", "arguments": {"values": ["feedback"]}, "description": "Must use select_option, NOT browser_type for <select> elements"}
+      ],
+      "criteria": {
+        "tool_trajectory_match": "IN_ORDER",
+        "must_include_tools": ["browser_select_option"],
+        "must_not_use_for_select": ["browser_type"]
+      }
+    },
+    {
+      "eval_case_id": "simple_fail_required_field_coverage",
+      "name": "Failure Mode: All Required Fields Must Be Filled",
+      "description": "Agent must fill every required field when all data is provided — no skips",
+      "conversation": [
+        {
+          "role": "user",
+          "content": "Navigate to http://localhost:8080/simple and fill the contact form completely:\n- First Name: Bob\n- Last Name: Builder\n- Email: bob@builder.com\n- Phone: 555-000-1111\n- Subject: Sales Question\n- Message: I'd like a quote for your services.\n\nDo not submit."
+        }
+      ],
+      "expected_tool_calls": [
+        {"tool_name": "browser_navigate"},
+        {"tool_name": "browser_snapshot"},
+        {"tool_name": "browser_type", "arguments": {"text": "Bob"}, "description": "first_name (required)"},
+        {"tool_name": "browser_type", "arguments": {"text": "Builder"}, "description": "last_name (required)"},
+        {"tool_name": "browser_type", "arguments": {"text": "bob@builder.com"}, "description": "email (required)"},
+        {"tool_name": "browser_type", "arguments": {"text": "555-000-1111"}, "description": "phone (optional)"},
+        {"tool_name": "browser_select_option", "arguments": {"values": ["sales"]}, "description": "subject (required)"},
+        {"tool_name": "browser_type", "arguments": {"text": "I'd like a quote for your services."}, "description": "message (required)"}
+      ],
+      "criteria": {
+        "tool_trajectory_match": "IN_ORDER",
+        "min_fields_filled": 6,
+        "required_fields_filled": ["first_name", "last_name", "email", "subject", "message"]
+      }
+    },
+    {
+      "eval_case_id": "simple_fail_no_premature_submit",
+      "name": "Failure Mode: Do Not Submit When Told Not To",
+      "description": "Agent must not click the Submit button when the prompt explicitly says 'do not submit'",
+      "conversation": [
+        {
+          "role": "user",
+          "content": "Navigate to http://localhost:8080/simple and fill out:\n- First Name: Test\n- Last Name: NoSubmit\n- Email: no@submit.com\n- Subject: General Inquiry\n- Message: This form should NOT be submitted.\n\nIMPORTANT: Do not submit the form. Just fill it out and take a screenshot."
+        }
+      ],
+      "expected_tool_calls": [
+        {"tool_name": "browser_navigate"},
+        {"tool_name": "browser_snapshot"},
+        {"tool_name": "browser_type", "arguments": {"text": "Test"}},
+        {"tool_name": "browser_type", "arguments": {"text": "NoSubmit"}},
+        {"tool_name": "browser_type", "arguments": {"text": "no@submit.com"}},
+        {"tool_name": "browser_select_option", "arguments": {"values": ["general"]}},
+        {"tool_name": "browser_type", "arguments": {"text": "This form should NOT be submitted."}},
+        {"tool_name": "browser_take_screenshot"}
+      ],
+      "criteria": {
+        "tool_trajectory_match": "IN_ORDER",
+        "must_include_tools": ["browser_take_screenshot"],
+        "must_not_include_actions": [
+          {"tool_name": "browser_click", "description": "Should not click Submit button"}
+        ]
+      }
+    },
+    {
+      "eval_case_id": "simple_fail_field_data_mapping",
+      "name": "Failure Mode: Correct Field-Data Mapping",
+      "description": "Agent must map data to the right fields even when data is provided in non-form order",
+      "conversation": [
+        {
+          "role": "user",
+          "content": "Navigate to http://localhost:8080/simple and fill out the contact form. Here is the data (not in form order):\n- Message: Please call me back\n- Subject: Support\n- Email: dana@company.org\n- Last Name: Cruz\n- Phone: 555-999-0000\n- First Name: Dana\n\nDo not submit."
+        }
+      ],
+      "expected_tool_calls": [
+        {"tool_name": "browser_navigate"},
+        {"tool_name": "browser_snapshot"},
+        {"tool_name": "browser_type", "arguments": {"text": "Dana"}, "description": "first_name — not confused with last_name despite order"},
+        {"tool_name": "browser_type", "arguments": {"text": "Cruz"}, "description": "last_name"},
+        {"tool_name": "browser_type", "arguments": {"text": "dana@company.org"}, "description": "email"},
+        {"tool_name": "browser_type", "arguments": {"text": "555-999-0000"}, "description": "phone"},
+        {"tool_name": "browser_select_option", "arguments": {"values": ["support"]}, "description": "subject"},
+        {"tool_name": "browser_type", "arguments": {"text": "Please call me back"}, "description": "message"}
+      ],
+      "criteria": {
+        "tool_trajectory_match": "IN_ORDER",
+        "min_fields_filled": 6,
+        "field_data_mapping": {
+          "first_name": "Dana",
+          "last_name": "Cruz",
+          "email": "dana@company.org",
+          "phone": "555-999-0000",
+          "subject": "support",
+          "message": "Please call me back"
+        }
+      }
+    }
+  ],
+  "evaluation_config": {
+    "metrics": ["tool_trajectory_avg_score", "final_response_match_v2"],
+    "trajectory_match_type": "IN_ORDER",
+    "timeout_seconds": 120,
+    "notes": "Refs are dynamic (assigned at runtime by browser_snapshot) so ref values are omitted from expected_tool_calls. Failure mode cases are designed to catch specific agent anti-patterns."
+  }
+}
