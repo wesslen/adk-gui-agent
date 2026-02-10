@@ -18,7 +18,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, SimpleSpanProcessor
 
 if TYPE_CHECKING:
-    from gui_agent.config import Settings
+    from gui_agent_v1.config import Settings
 
 logger = logging.getLogger(__name__)
 

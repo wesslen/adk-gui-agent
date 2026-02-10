@@ -89,16 +89,16 @@ logs:
 # =============================================================================
 
 run:
-	uv run python -m gui_agent.cli
+	uv run python -m gui_agent_v1.cli
 
 run-headless:
-	BROWSER_HEADLESS=true uv run python -m gui_agent.cli
+	BROWSER_HEADLESS=true uv run python -m gui_agent_v1.cli
 
 run-headed:
-	BROWSER_HEADLESS=false uv run python -m gui_agent.cli
+	BROWSER_HEADLESS=false uv run python -m gui_agent_v1.cli
 
 adk-web:
-	uv run adk web src/gui_agent
+	uv run adk web gui_agent_v1
 
 # =============================================================================
 # Mock Server
@@ -128,21 +128,21 @@ test-evalset:
 	uv run pytest tests/ -v -m "evalset"
 
 test-cov:
-	uv run pytest tests/ -v --cov=src/gui_agent --cov-report=html --cov-report=term
+	uv run pytest tests/ -v --cov=gui_agent_v1 --cov-report=html --cov-report=term
 
 # =============================================================================
 # Code Quality
 # =============================================================================
 
 lint:
-	uv run ruff check src/ tests/
+	uv run ruff check gui_agent_v1/ tests/
 
 format:
-	uv run ruff format src/ tests/
-	uv run ruff check --fix src/ tests/
+	uv run ruff format gui_agent_v1/ tests/
+	uv run ruff check --fix gui_agent_v1/ tests/
 
 typecheck:
-	uv run mypy src/
+	uv run mypy gui_agent_v1/
 
 # =============================================================================
 # Cleanup

@@ -93,8 +93,8 @@ echo "================================"
 
 if [ -n "$1" ]; then
     # Run single task if provided
-    python -m gui_agent.cli --task "$1"
+    python -m gui_agent_v1.cli --task "$1"
 else
     # Interactive mode
-    python -m gui_agent.cli
+    python -m gui_agent_v1.cli
 fi

@@ -150,33 +150,34 @@ gcloud auth application-default login
 ## Project Structure
 
 ```
-gui-agent/
-├── src/gui_agent/
-│   ├── agent.py          # ADK agent definition
-│   ├── config.py         # Pydantic settings with auth fallback
-│   ├── observability.py  # Phoenix/OTEL tracing setup
-│   ├── cli.py            # Command-line interface
+adk-gui-agent/
+├── gui_agent_v1/           # Agent v1 (future versions: gui_agent_v2/, etc.)
+│   ├── agent.py            # ADK agent definition + root_agent export
+│   ├── config.py           # Pydantic settings with auth fallback
+│   ├── observability.py    # Phoenix/OTEL tracing setup
+│   ├── cli.py              # Command-line interface
+│   ├── evals/              # ADK evaluation sets (co-located with agent)
+│   │   ├── basic.evalset.json
+│   │   ├── simple.evalset.json
+│   │   └── complex.evalset.json
 │   └── prompts/
-│       └── system.py     # System prompts (ref-based workflow)
+│       └── system.py       # System prompts (ref-based workflow)
 ├── tests/
-│   ├── conftest.py       # Pytest fixtures
-│   ├── evalsets/
-│   │   └── form_filling/ # ADK evaluation datasets
-│   │       └── basic.evalset.json
-│   ├── test_agent.py     # Agent tests
-│   └── test_config.py    # Config tests
-├── mock_sites/           # Test form websites
-│   ├── server.py         # FastAPI server
-│   └── templates/        # HTML forms
-├── scripts/              # Runner scripts
+│   ├── conftest.py         # Pytest fixtures
+│   ├── test_agent.py       # Agent + eval set tests
+│   └── test_config.py      # Config tests
+├── mock_sites/             # Test form websites
+│   ├── server.py           # FastAPI server
+│   └── templates/          # HTML forms
+├── scripts/                # Runner scripts
 │   ├── run_headless.sh
 │   ├── run_headed.sh
 │   └── setup_gcp.sh
-├── docker-compose.yml    # Phoenix + Playwright MCP + Mock server
-├── Makefile              # Common commands (uses uv)
-├── pyproject.toml        # Python dependencies
-├── README.md             # This file
-└── AGENTS.md             # Project context for AI agents
+├── docker-compose.yml      # Phoenix + Playwright MCP + Mock server
+├── Makefile                # Common commands (uses uv)
+├── pyproject.toml          # Python dependencies
+├── README.md               # This file
+└── AGENTS.md               # Project context for AI agents
 ```
 
 ## Mock Test Forms
@@ -231,7 +232,7 @@ uv run pytest tests/ -v
 
 ### Evaluation Format
 
-Tests use ADK's evaluation format adapted for pytest. See `tests/evalsets/form_filling/basic.evalset.json` for examples:
+Tests use ADK's evaluation format adapted for pytest. See `gui_agent_v1/evals/simple.evalset.json` for examples:
 
 ```json
 {

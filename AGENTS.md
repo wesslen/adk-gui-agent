@@ -33,8 +33,8 @@ make run-headed       # Headed mode (local dev with display)
 
 # Run ADK evals (requires google-adk[eval])
 uv add "google-adk[eval]"                                        # One-time setup
-uv run adk eval src/gui_agent src/gui_agent/evals/simple.evalset.json   # Run simple evals
-uv run adk eval src/gui_agent src/gui_agent/evals/complex.evalset.json  # Run complex evals
+uv run adk eval gui_agent_v1 gui_agent_v1/evals/simple.evalset.json   # Run simple evals
+uv run adk eval gui_agent_v1 gui_agent_v1/evals/complex.evalset.json  # Run complex evals
 ```
 
 ---
@@ -65,7 +65,7 @@ uv run adk eval src/gui_agent src/gui_agent/evals/complex.evalset.json  # Run co
 
 ```
 ┌─────────────────┐
-│  Python Agent   │ (gui_agent.cli)
+│  Python Agent   │ (gui_agent_v1.cli)
 │  (uv managed)   │
 └────────┬────────┘
          │
@@ -98,12 +98,12 @@ uv run adk eval src/gui_agent src/gui_agent/evals/complex.evalset.json  # Run co
 - `docker-compose.yml` - Service orchestration
 
 ### Source Code
-- `src/gui_agent/agent.py` - Core agent logic, MCP tool integration
-- `src/gui_agent/cli.py` - Interactive CLI interface
-- `src/gui_agent/config.py` - Settings management (Pydantic)
-- `src/gui_agent/prompts.py` - System prompts for the agent
-- `src/gui_agent/observability.py` - Phoenix tracing setup
-- `src/gui_agent/evals/` - ADK evaluation sets (co-located with agent)
+- `gui_agent_v1/agent.py` - Core agent logic, MCP tool integration
+- `gui_agent_v1/cli.py` - Interactive CLI interface
+- `gui_agent_v1/config.py` - Settings management (Pydantic)
+- `gui_agent_v1/prompts.py` - System prompts for the agent
+- `gui_agent_v1/observability.py` - Phoenix tracing setup
+- `gui_agent_v1/evals/` - ADK evaluation sets (co-located with agent)
   - `basic.evalset.json` - Legacy baseline (4 cases, simple form)
   - `simple.evalset.json` - Simple form: 2 happy paths + 6 failure modes
   - `complex.evalset.json` - Complex form: 2 happy paths + 8 failure modes
@@ -125,7 +125,7 @@ uv run adk eval src/gui_agent src/gui_agent/evals/complex.evalset.json  # Run co
 ```bash
 uv sync                    # Install dependencies
 uv sync --extra dev        # Include dev deps
-uv run python -m gui_agent.cli  # Run with uv
+uv run python -m gui_agent_v1.cli  # Run with uv
 ```
 
 All Makefile targets use `uv run` to ensure correct environment.
@@ -228,7 +228,7 @@ http://mock-server:8080/complex
 
 ### ADK Evaluation Sets
 
-Eval sets live alongside the agent source at `src/gui_agent/evals/` (following ADK convention).
+Eval sets live alongside the agent source at `gui_agent_v1/evals/` (following ADK convention).
 
 | File | Target | Cases | Description |
 |------|--------|-------|-------------|
@@ -320,8 +320,15 @@ PHOENIX_COLLECTOR_ENDPOINT=http://localhost:6006/v1/traces
 
 ## Recent Changes
 
+### 2026-02-10: Project Restructure — Remove src/, Rename to gui_agent_v1
+1. **Moved `src/gui_agent/` → `gui_agent_v1/`** at project root (supports multi-version agents)
+2. **Renamed all imports** from `gui_agent` to `gui_agent_v1` across source, tests, and scripts
+3. **Updated `pyproject.toml`**: packages, entry point, pythonpath all reference `gui_agent_v1`
+4. **Updated Makefile**: all `src/` paths replaced with `gui_agent_v1/`
+5. **Updated shell scripts**: `python -m gui_agent_v1.cli`
+
 ### 2026-02-10: ADK Eval Test Coverage Overhaul
-1. **Moved eval sets to `src/gui_agent/evals/`** (co-located with agent per ADK convention)
+1. **Moved eval sets to `gui_agent_v1/evals/`** (co-located with agent per ADK convention)
 2. **Created `simple.evalset.json`** — 8 cases (2 happy paths + 6 failure modes)
 3. **Created `complex.evalset.json`** — 10 cases (2 happy paths + 8 failure modes)
 4. **Rewrote `test_agent.py` eval validation:**
@@ -329,11 +336,11 @@ PHOENIX_COLLECTOR_ENDPOINT=http://localhost:6006/v1/traces
    - Added structural validation (unique IDs, known tools, required fields)
    - Added per-form test classes (`TestSimpleFormEvalCases`, `TestComplexFormEvalCases`)
    - Validates trajectory ordering, criteria flags, and ISO date formats
-5. **Updated `conftest.py`** — `load_evalset` now takes flat name, points to `src/gui_agent/evals/`
+5. **Updated `conftest.py`** — `load_evalset` now takes flat name, points to `gui_agent_v1/evals/`
 6. **Fixed `root_agent` export for ADK CLI** — replaced broken `property()` descriptor with
    eager module-level `LlmAgent` instance (ADK requires a real instance, not a descriptor)
 7. **Added `from . import agent` to `__init__.py`** — needed for ADK CLI path resolution
-   (`gui_agent.agent.root_agent`)
+   (`gui_agent_v1.agent.root_agent`)
 8. **Added `google-adk[eval]` dependency** — required for `adk eval` CLI. Install via
    `uv add "google-adk[eval]"`
 

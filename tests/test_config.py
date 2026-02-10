@@ -15,7 +15,7 @@ class TestSettings:
         monkeypatch.setenv("GOOGLE_API_KEY", "test-api-key")
         monkeypatch.setenv("GOOGLE_GENAI_USE_VERTEXAI", "FALSE")
 
-        from gui_agent.config import get_settings
+        from gui_agent_v1.config import get_settings
 
         get_settings.cache_clear()
         settings = get_settings()
@@ -30,7 +30,7 @@ class TestSettings:
         monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "test-project")
         monkeypatch.setenv("GOOGLE_CLOUD_LOCATION", "us-central1")
 
-        from gui_agent.config import get_settings
+        from gui_agent_v1.config import get_settings
 
         get_settings.cache_clear()
         settings = get_settings()
@@ -47,7 +47,7 @@ class TestSettings:
         # Disable .env file loading for this test
         monkeypatch.setenv("PYDANTIC_SETTINGS_ENV_FILE", "")
 
-        from gui_agent.config import Settings, get_settings
+        from gui_agent_v1.config import Settings, get_settings
 
         get_settings.cache_clear()
 
@@ -58,7 +58,7 @@ class TestSettings:
         """Test default configuration values."""
         monkeypatch.setenv("GOOGLE_API_KEY", "test-key")
 
-        from gui_agent.config import get_settings
+        from gui_agent_v1.config import get_settings
 
         get_settings.cache_clear()
         settings = get_settings()
@@ -73,7 +73,7 @@ class TestSettings:
         """Test environment configuration for API key mode."""
         monkeypatch.setenv("GOOGLE_API_KEY", "test-api-key")
 
-        from gui_agent.config import get_settings
+        from gui_agent_v1.config import get_settings
 
         get_settings.cache_clear()
         settings = get_settings()
@@ -89,7 +89,7 @@ class TestSettings:
         monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "my-project")
         monkeypatch.setenv("GOOGLE_CLOUD_LOCATION", "europe-west1")
 
-        from gui_agent.config import get_settings
+        from gui_agent_v1.config import get_settings
 
         get_settings.cache_clear()
         settings = get_settings()
@@ -105,7 +105,7 @@ class TestSettings:
         monkeypatch.setenv("MOCK_SERVER_HOST", "testhost")
         monkeypatch.setenv("MOCK_SERVER_PORT", "9999")
 
-        from gui_agent.config import get_settings
+        from gui_agent_v1.config import get_settings
 
         get_settings.cache_clear()
         settings = get_settings()
@@ -118,7 +118,7 @@ class TestSettings:
         monkeypatch.setenv("PHOENIX_HOST", "phoenix.local")
         monkeypatch.setenv("PHOENIX_PORT", "7007")
 
-        from gui_agent.config import get_settings
+        from gui_agent_v1.config import get_settings
 
         get_settings.cache_clear()
         settings = get_settings()

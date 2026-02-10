@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 if TYPE_CHECKING:
-    from gui_agent.config import Settings
+    from gui_agent_v1.config import Settings
 
 
 # =============================================================================
@@ -26,7 +26,7 @@ class TestAgentCreation:
 
     def test_create_agent(self, settings: "Settings"):
         """Test that the agent can be created with valid settings."""
-        from gui_agent.agent import create_form_filling_agent
+        from gui_agent_v1.agent import create_form_filling_agent
 
         settings.configure_environment()
 
@@ -38,7 +38,7 @@ class TestAgentCreation:
 
     def test_agent_has_correct_model(self, settings: "Settings"):
         """Test that the agent uses the configured model."""
-        from gui_agent.agent import create_form_filling_agent
+        from gui_agent_v1.agent import create_form_filling_agent
 
         settings.configure_environment()
         agent = create_form_filling_agent(model="gemini-2.0-flash", toolset=None)
@@ -52,7 +52,7 @@ class TestSystemPrompts:
 
     def test_form_filling_prompt_content(self):
         """Test that the form filling prompt contains expected guidance."""
-        from gui_agent.prompts import FORM_FILLING_SYSTEM_PROMPT
+        from gui_agent_v1.prompts import FORM_FILLING_SYSTEM_PROMPT
 
         prompt = FORM_FILLING_SYSTEM_PROMPT.lower()
 
@@ -64,7 +64,7 @@ class TestSystemPrompts:
 
     def test_prompt_includes_safety_guidelines(self):
         """Test that prompts include safety considerations."""
-        from gui_agent.prompts import FORM_FILLING_SYSTEM_PROMPT
+        from gui_agent_v1.prompts import FORM_FILLING_SYSTEM_PROMPT
 
         prompt = FORM_FILLING_SYSTEM_PROMPT.lower()
 
@@ -382,7 +382,7 @@ class TestFormFillingIntegration:
     @pytest.mark.skip(reason="Requires running Playwright MCP server")
     async def test_navigate_to_simple_form(self):
         """Test navigating to the simple form page."""
-        from gui_agent.agent import run_agent_task
+        from gui_agent_v1.agent import run_agent_task
 
         result = await run_agent_task(
             "Navigate to http://localhost:8080/simple and describe what you see"
@@ -393,7 +393,7 @@ class TestFormFillingIntegration:
     @pytest.mark.skip(reason="Requires running Playwright MCP server")
     async def test_fill_simple_form(self, form_filling_data: dict[str, str]):
         """Test filling the simple contact form."""
-        from gui_agent.agent import run_agent_task
+        from gui_agent_v1.agent import run_agent_task
 
         task = f"""
         Navigate to http://localhost:8080/simple and fill the contact form with:

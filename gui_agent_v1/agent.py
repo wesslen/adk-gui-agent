@@ -16,9 +16,9 @@ from google.adk.sessions import InMemorySessionService
 from google.adk.tools.mcp_tool import McpToolset, SseConnectionParams
 from google.genai import types
 
-from gui_agent.config import get_settings
-from gui_agent.observability import TracingContext
-from gui_agent.prompts import FORM_FILLING_SYSTEM_PROMPT
+from gui_agent_v1.config import get_settings
+from gui_agent_v1.observability import TracingContext
+from gui_agent_v1.prompts import FORM_FILLING_SYSTEM_PROMPT
 
 if TYPE_CHECKING:
     from google.adk.agents import Agent

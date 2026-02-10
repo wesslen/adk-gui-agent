@@ -7,9 +7,9 @@ import asyncio
 import logging
 import sys
 
-from gui_agent.agent import run_agent_task
-from gui_agent.config import get_settings
-from gui_agent.observability import TracingContext
+from gui_agent_v1.agent import run_agent_task
+from gui_agent_v1.config import get_settings
+from gui_agent_v1.observability import TracingContext
 
 
 def setup_logging(verbose: bool = False) -> None:

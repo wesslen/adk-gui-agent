@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Any, Generator
 import pytest
 
 if TYPE_CHECKING:
-    from gui_agent.config import Settings
+    from gui_agent_v1.config import Settings
 
 
 # =============================================================================
@@ -66,7 +66,7 @@ def settings(test_env: dict[str, str], monkeypatch: pytest.MonkeyPatch) -> "Sett
         monkeypatch.setenv(key, value)
 
     # Clear the cached settings to pick up test config
-    from gui_agent.config import get_settings
+    from gui_agent_v1.config import get_settings
 
     get_settings.cache_clear()
 
@@ -135,7 +135,7 @@ def mock_server_process() -> Generator[subprocess.Popen | None, None, None]:
 @pytest.fixture
 def evalset_dir() -> Path:
     """Return the path to evaluation sets (co-located with agent source)."""
-    return Path(__file__).parent.parent / "src" / "gui_agent" / "evals"
+    return Path(__file__).parent.parent / "gui_agent_v1" / "evals"
 
 
 @pytest.fixture
@@ -200,7 +200,7 @@ def complex_form_data() -> dict[str, str]:
 @pytest.fixture
 def agent_factory(settings: "Settings"):
     """Factory fixture to create configured agents."""
-    from gui_agent.agent import create_form_filling_agent
+    from gui_agent_v1.agent import create_form_filling_agent
 
     def _create(model: str | None = None):
         settings.configure_environment()

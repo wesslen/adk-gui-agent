@@ -83,9 +83,9 @@ echo -e "${YELLOW}Note: Browser windows will be visible${NC}"
 echo ""
 
 if [ -n "$1" ]; then
-    python -m gui_agent.cli --task "$1"
+    python -m gui_agent_v1.cli --task "$1"
 else
-    python -m gui_agent.cli
+    python -m gui_agent_v1.cli
 fi
 
 # Cleanup

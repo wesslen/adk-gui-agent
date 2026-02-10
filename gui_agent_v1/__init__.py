@@ -2,5 +2,5 @@
 
 __version__ = "0.1.0"
 
-# Re-export agent submodule so ADK CLI can resolve gui_agent.agent.root_agent
+# Re-export agent submodule so ADK CLI can resolve gui_agent_v1.agent.root_agent
 from . import agent  # noqa: F401
