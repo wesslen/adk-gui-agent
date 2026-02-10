@@ -90,33 +90,24 @@ def create_form_filling_agent(
     )
 
 
-# The root_agent is discovered by ADK CLI tools (adk web, adk run, etc.)
-# It's created lazily to allow configuration before instantiation
-_root_agent: LlmAgent | None = None
+# ---------------------------------------------------------------------------
+# ADK CLI discovery
+# ---------------------------------------------------------------------------
+# `adk web`, `adk run`, and `adk eval` all expect a module-level variable
+# named exactly `root_agent` that IS an LlmAgent instance — not a function,
+# not a property descriptor, not None.
+#
+# McpToolset uses lazy connection (constructed here, connects later when
+# tools are actually invoked), so this is safe to run at import time even
+# when the Playwright MCP server is not yet running.
+# ---------------------------------------------------------------------------
+_settings = get_settings()
+_settings.configure_environment()
 
+root_agent = create_form_filling_agent()
 
-def get_root_agent() -> LlmAgent:
-    """Get or create the root agent.
-
-    This function ensures settings are configured before creating the agent.
-
-    Returns:
-        The configured root agent.
-    """
-    global _root_agent
-
-    if _root_agent is None:
-        settings = get_settings()
-        settings.configure_environment()
-        _root_agent = create_form_filling_agent()
-        logger.info(f"Created root agent with model: {settings.model_name}")
-        logger.info(f"Authentication mode: {settings.auth_mode}")
-
-    return _root_agent
-
-
-# For ADK CLI discovery - this is the canonical agent export
-root_agent = property(lambda self: get_root_agent())
+logger.info(f"Created root agent with model: {_settings.model_name}")
+logger.info(f"Authentication mode: {_settings.auth_mode}")
 
 
 async def run_agent_task(

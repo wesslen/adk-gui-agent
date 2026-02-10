@@ -30,6 +30,11 @@ make start-mock-server  # Optional: start test form server
 # Run agent
 make run-headless     # Headless mode (for Cloud Shell)
 make run-headed       # Headed mode (local dev with display)
+
+# Run ADK evals (requires google-adk[eval])
+uv add "google-adk[eval]"                                        # One-time setup
+uv run adk eval src/gui_agent src/gui_agent/evals/simple.evalset.json   # Run simple evals
+uv run adk eval src/gui_agent src/gui_agent/evals/complex.evalset.json  # Run complex evals
 ```
 
 ---
@@ -315,7 +320,7 @@ PHOENIX_COLLECTOR_ENDPOINT=http://localhost:6006/v1/traces
 
 ## Recent Changes
 
-### 2026-02-09: ADK Eval Test Coverage Overhaul
+### 2026-02-10: ADK Eval Test Coverage Overhaul
 1. **Moved eval sets to `src/gui_agent/evals/`** (co-located with agent per ADK convention)
 2. **Created `simple.evalset.json`** — 8 cases (2 happy paths + 6 failure modes)
 3. **Created `complex.evalset.json`** — 10 cases (2 happy paths + 8 failure modes)
@@ -325,6 +330,12 @@ PHOENIX_COLLECTOR_ENDPOINT=http://localhost:6006/v1/traces
    - Added per-form test classes (`TestSimpleFormEvalCases`, `TestComplexFormEvalCases`)
    - Validates trajectory ordering, criteria flags, and ISO date formats
 5. **Updated `conftest.py`** — `load_evalset` now takes flat name, points to `src/gui_agent/evals/`
+6. **Fixed `root_agent` export for ADK CLI** — replaced broken `property()` descriptor with
+   eager module-level `LlmAgent` instance (ADK requires a real instance, not a descriptor)
+7. **Added `from . import agent` to `__init__.py`** — needed for ADK CLI path resolution
+   (`gui_agent.agent.root_agent`)
+8. **Added `google-adk[eval]` dependency** — required for `adk eval` CLI. Install via
+   `uv add "google-adk[eval]"`
 
 ### 2026-02-01: Initial Working Agent
 1. **Fixed async/await issues in `agent.py`:**
@@ -350,7 +361,7 @@ PHOENIX_COLLECTOR_ENDPOINT=http://localhost:6006/v1/traces
 ## Dependencies
 
 ### Core
-- `google-adk>=0.5.0` - Agent framework
+- `google-adk[eval]>=0.5.0` - Agent framework (includes eval CLI: `uv add "google-adk[eval]"`)
 - `google-genai>=1.0.0` - Gemini API client
 
 ### Observability
