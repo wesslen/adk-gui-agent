@@ -76,7 +76,7 @@ uv run adk eval gui_agent_v1 gui_agent_v1/evals/complex.evalset.json  # Run comp
          ├─→ Playwright MCP Server (Docker)
          │   - Port: 8931
          │   - Browser: Chrome (headless, no-sandbox)
-         │   - Tools: browser_navigate, browser_screenshot, etc.
+         │   - Tools: browser_navigate, browser_take_screenshot, etc.
          │
          └─→ Arize Phoenix (Docker)
              - Port: 6006
@@ -280,7 +280,9 @@ pytest tests/test_agent.py -k "Complex"  # Complex form evals
 - Last Name: Doe
 - Email: john.doe@example.com
 - Phone: 555-123-4567
-- Subject: General Inquiry"
+- Subject: General Inquiry
+- Message: What days are the office open?
+Take a screenshot image confirming the completion of the task"
 ```
 
 ### Observability
@@ -373,7 +375,7 @@ PHOENIX_COLLECTOR_ENDPOINT=http://localhost:6006/v1/traces
 
 ### Observability
 - `arize-phoenix>=8.0.0` - Tracing/observability
-- `openinference-instrumentation-google-genai>=0.1.0`
+- `openinference-instrumentation-google-adk>=0.1.0` - ADK-level auto-instrumentation
 
 ### Configuration
 - `pydantic-settings>=2.0.0`
@@ -411,11 +413,14 @@ docker logs gui-agent-mock --tail 30
 
 ### View Traces
 1. Open Phoenix UI: http://localhost:6006
-2. Run a task in the agent
-3. Check traces for:
-   - LLM requests/responses
-   - Tool calls (browser_navigate, etc.)
-   - Errors and latency
+2. Run a task via `adk web`, `adk run`, or the CLI
+3. Tracing is initialized at module level in `agent.py` — it works
+   automatically for all entry points (no extra flags needed)
+4. Check traces for:
+   - Agent execution steps and decisions
+   - LLM requests/responses (input/output tokens)
+   - Tool calls (browser_navigate, browser_snapshot, etc.)
+   - Errors, latency, and span hierarchy
 
 ### Interactive Debugging
 ```bash

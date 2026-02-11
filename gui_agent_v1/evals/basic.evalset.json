@@ -106,12 +106,12 @@
           "tool_name": "browser_type"
         },
         {
-          "tool_name": "browser_screenshot"
+          "tool_name": "browser_take_screenshot"
         }
       ],
       "criteria": {
         "tool_trajectory_match": "IN_ORDER",
-        "must_include_tools": ["browser_navigate", "browser_snapshot", "browser_screenshot"]
+        "must_include_tools": ["browser_navigate", "browser_snapshot", "browser_take_screenshot"]
       }
     },
     {
