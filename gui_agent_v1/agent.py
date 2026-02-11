@@ -197,6 +197,13 @@ async def run_agent_task(
 ) -> str:
     """Run the agent on a specific task.
 
+    Reuses the module-level ``root_agent`` so that the underlying
+    McpToolset (and its SSE connection to the Playwright MCP server)
+    persists across calls.  Creating a *new* agent per call would open
+    a fresh SSE connection each time while the old one stays alive,
+    causing "isolated browser" / "browser already in use" errors on
+    repeated runs.
+
     Args:
         task: The task description (e.g., "Fill the contact form with...")
         user_id: User identifier for session tracking.
@@ -224,10 +231,10 @@ async def run_agent_task(
         session_id=session_id,
     )
 
-    # Create agent and runner
-    agent = create_form_filling_agent()
+    # Reuse the module-level root_agent so we keep a single SSE
+    # connection to the Playwright MCP server across tasks.
     runner = Runner(
-        agent=agent,
+        agent=root_agent,
         app_name="gui-agent",
         session_service=session_service,
     )

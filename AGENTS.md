@@ -424,6 +424,13 @@ docker logs gui-agent-mock --tail 30
    - Tool calls (browser_navigate, browser_snapshot, etc.)
    - Errors, latency, and span hierarchy
 
+> **Known issue (adk web traces):** When using `adk web`, tool-call
+> spans may appear "orphaned" (not nested under their parent LLM call).
+> This is an upstream ADK issue — `adk web` manages its own internal
+> OpenTelemetry tracing which conflicts with `GoogleADKInstrumentor`.
+> The CLI (`gui-agent`) produces correctly structured trace trees.
+> See: https://github.com/google/adk-python/issues/2792
+
 ### Interactive Debugging
 ```bash
 # Enter container
