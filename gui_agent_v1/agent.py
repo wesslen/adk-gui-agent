@@ -17,7 +17,7 @@ from google.adk.tools.mcp_tool import McpToolset, SseConnectionParams
 from google.genai import types
 
 from gui_agent_v1.config import get_settings
-from gui_agent_v1.observability import TracingContext
+from gui_agent_v1.observability import TracingContext, setup_adk_instrumentation, setup_tracing
 from gui_agent_v1.prompts import FORM_FILLING_SYSTEM_PROMPT
 
 if TYPE_CHECKING:
@@ -103,6 +103,14 @@ def create_form_filling_agent(
 # ---------------------------------------------------------------------------
 _settings = get_settings()
 _settings.configure_environment()
+
+# Set up Arize Phoenix tracing BEFORE creating the agent.
+# This is critical: instrumentation must be registered before any ADK
+# objects are used, so traces are captured for ALL entry points
+# (adk web, adk run, adk eval, and the CLI).
+_tracing_provider = setup_tracing(_settings)
+if _tracing_provider:
+    setup_adk_instrumentation(_tracing_provider)
 
 root_agent = create_form_filling_agent()
 
