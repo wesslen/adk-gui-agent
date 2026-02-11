@@ -37,12 +37,13 @@ services:
       - PLAYWRIGHT_CHROMIUM_ARGS=--no-sandbox --disable-setuid-sandbox
     volumes:
       - ./playwright-mcp:/app
+      - ./gui_agent_v1/screenshots:/app/screenshots
       - playwright_cache:/root/.cache
     command: >
       bash -c "
         npm install -g @playwright/mcp@latest &&
         npx playwright install chrome --with-deps &&
-        npx @playwright/mcp@latest --port 8931 --host 0.0.0.0 --headless --no-sandbox
+        npx @playwright/mcp@latest --port 8931 --host 0.0.0.0 --headless --no-sandbox --output-dir /app/screenshots
       "
     # For headed mode, remove --headless and use X11 forwarding:
     # command: >

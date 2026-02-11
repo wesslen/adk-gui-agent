@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import TYPE_CHECKING
+import re
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING, Any
 
 from google.adk.agents import LlmAgent
 from google.adk.runners import Runner
@@ -22,9 +24,72 @@ from gui_agent_v1.prompts import FORM_FILLING_SYSTEM_PROMPT
 
 if TYPE_CHECKING:
     from google.adk.agents import Agent
+    from google.adk.tools import BaseTool, ToolContext
 
 logger = logging.getLogger(__name__)
 
+
+# ---------------------------------------------------------------------------
+# Screenshot filename callback
+# ---------------------------------------------------------------------------
+
+def _sanitize_filename(name: str) -> str:
+    """Sanitize a filename to only contain safe characters."""
+    # Replace spaces and special chars with underscores
+    name = re.sub(r"[^\w\-.]", "_", name)
+    # Collapse multiple underscores
+    name = re.sub(r"_+", "_", name)
+    return name.strip("_")
+
+
+def _screenshot_callback(
+    tool: "BaseTool",
+    args: dict[str, Any],
+    tool_context: "ToolContext",
+) -> dict[str, Any] | None:
+    """Intercept browser_take_screenshot calls to add timestamped filenames.
+
+    This ADK before_tool_callback ensures every screenshot gets a unique,
+    timestamped filename so repeated task runs never overwrite previous
+    screenshots.
+
+    The Playwright MCP server's --output-dir flag controls WHERE the file
+    is saved (mapped to gui_agent_v1/screenshots/ via Docker volume).
+    This callback controls the FILENAME within that directory.
+
+    Args:
+        tool: The tool being called (BaseTool/McpTool instance).
+        args: Mutable dict of tool arguments.
+        tool_context: ADK tool context.
+
+    Returns:
+        None to proceed with (possibly modified) args.
+    """
+    if tool.name != "browser_take_screenshot":
+        return None
+
+    timestamp = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S")
+
+    original = args.get("filename")
+    if original:
+        # Strip any directory prefix the LLM might have added
+        base = original.rsplit("/", 1)[-1]
+        base = _sanitize_filename(base)
+        # Ensure it has an extension
+        if "." not in base:
+            base = f"{base}.png"
+        args["filename"] = f"{timestamp}_{base}"
+    else:
+        # No filename provided — create a descriptive default
+        args["filename"] = f"{timestamp}_screenshot.png"
+
+    logger.debug(f"Screenshot filename: {args['filename']}")
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Agent factory
+# ---------------------------------------------------------------------------
 
 def create_playwright_toolset() -> McpToolset:
     """Create the Playwright MCP toolset.
@@ -87,6 +152,7 @@ def create_form_filling_agent(
         model=model or settings.model_name,
         instruction=FORM_FILLING_SYSTEM_PROMPT,
         tools=[toolset],
+        before_tool_callback=_screenshot_callback,
     )
 
 

@@ -71,6 +71,13 @@ class Settings(BaseSettings):
     max_agent_steps: int = Field(default=20, alias="MAX_AGENT_STEPS")
 
     # =========================================================================
+    # Screenshots
+    # =========================================================================
+    # Directory name (relative to agent module) where screenshots are saved.
+    # The Playwright MCP --output-dir flag should point to the same location.
+    screenshot_dir: str = Field(default="screenshots", alias="SCREENSHOT_DIR")
+
+    # =========================================================================
     # Mock Server
     # =========================================================================
     mock_server_host: str = Field(default="localhost", alias="MOCK_SERVER_HOST")

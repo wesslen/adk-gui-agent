@@ -103,6 +103,7 @@ uv run adk eval gui_agent_v1 gui_agent_v1/evals/complex.evalset.json  # Run comp
 - `gui_agent_v1/config.py` - Settings management (Pydantic)
 - `gui_agent_v1/prompts.py` - System prompts for the agent
 - `gui_agent_v1/observability.py` - Phoenix tracing setup
+- `gui_agent_v1/screenshots/` - Auto-saved screenshots (timestamped filenames)
 - `gui_agent_v1/evals/` - ADK evaluation sets (co-located with agent)
   - `basic.evalset.json` - Legacy baseline (4 cases, simple form)
   - `simple.evalset.json` - Simple form: 2 happy paths + 6 failure modes
@@ -282,7 +283,8 @@ pytest tests/test_agent.py -k "Complex"  # Complex form evals
 - Phone: 555-123-4567
 - Subject: General Inquiry
 - Message: What days are the office open?
-Take a screenshot image confirming the completion of the task"
+Submit the form.
+Then take a screenshot image confirming the completion of the task (form submitted)"
 ```
 
 ### Observability

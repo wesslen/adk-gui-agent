@@ -160,6 +160,7 @@ adk-gui-agent/
 │   │   ├── basic.evalset.json
 │   │   ├── simple.evalset.json
 │   │   └── complex.evalset.json
+│   ├── screenshots/        # Auto-saved screenshots (timestamped)
 │   └── prompts/
 │       └── system.py       # System prompts (ref-based workflow)
 ├── tests/

@@ -98,7 +98,7 @@ run-headed:
 	BROWSER_HEADLESS=false uv run python -m gui_agent_v1.cli
 
 adk-web:
-	uv run adk web gui_agent_v1
+	uv run adk web
 
 # =============================================================================
 # Mock Server
