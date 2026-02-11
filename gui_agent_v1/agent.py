@@ -53,9 +53,13 @@ def _screenshot_callback(
     timestamped filename so repeated task runs never overwrite previous
     screenshots.
 
-    The Playwright MCP server's --output-dir flag controls WHERE the file
-    is saved (mapped to gui_agent_v1/screenshots/ via Docker volume).
-    This callback controls the FILENAME within that directory.
+    File location strategy:
+      - The callback prepends ``screenshots/`` to the filename so the
+        Playwright MCP server writes to ``<working_dir>/screenshots/``.
+      - In Docker, ``./gui_agent_v1/screenshots`` is volume-mounted to
+        ``/app/screenshots``, so files land in the agent's own folder.
+      - For local (non-Docker) usage the ``screenshots/`` sub-directory
+        is created relative to wherever the MCP server runs.
 
     Args:
         tool: The tool being called (BaseTool/McpTool instance).
@@ -68,6 +72,8 @@ def _screenshot_callback(
     if tool.name != "browser_take_screenshot":
         return None
 
+    settings = get_settings()
+    screenshot_dir = settings.screenshot_dir  # default: "screenshots"
     timestamp = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S")
 
     original = args.get("filename")
@@ -78,12 +84,12 @@ def _screenshot_callback(
         # Ensure it has an extension
         if "." not in base:
             base = f"{base}.png"
-        args["filename"] = f"{timestamp}_{base}"
+        args["filename"] = f"{screenshot_dir}/{timestamp}_{base}"
     else:
         # No filename provided — create a descriptive default
-        args["filename"] = f"{timestamp}_screenshot.png"
+        args["filename"] = f"{screenshot_dir}/{timestamp}_screenshot.png"
 
-    logger.debug(f"Screenshot filename: {args['filename']}")
+    logger.debug(f"Screenshot will be saved as: {args['filename']}")
     return None
 
 

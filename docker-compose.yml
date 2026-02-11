@@ -43,7 +43,7 @@ services:
       bash -c "
         npm install -g @playwright/mcp@latest &&
         npx playwright install chrome --with-deps &&
-        npx @playwright/mcp@latest --port 8931 --host 0.0.0.0 --headless --no-sandbox --output-dir /app/screenshots
+        npx @playwright/mcp@latest --port 8931 --host 0.0.0.0 --headless --no-sandbox
       "
     # For headed mode, remove --headless and use X11 forwarding:
     # command: >
