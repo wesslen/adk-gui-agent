@@ -204,14 +204,17 @@
 
                 if (result.status === 'success') {
                     successMsg.style.display = 'block';
-                    form.reset();
+                    // Do NOT reset the form — keep fields filled so the
+                    // agent can take a verification screenshot after submit.
+                    submitBtn.textContent = '✓ Sent';
+                    submitBtn.disabled = true;
+                    return;
                 } else {
                     throw new Error(result.message || 'Submission failed');
                 }
             } catch (error) {
                 errorMsg.style.display = 'block';
                 document.getElementById('errorText').textContent = error.message;
-            } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Send Message';
             }

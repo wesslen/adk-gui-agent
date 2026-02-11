@@ -173,11 +173,19 @@
         .btn-success { background: #28a745; color: white; }
         .btn-success:hover { background: #218838; }
 
-        /* Success Page */
-        .success-page { display: none; text-align: center; padding: 60px 40px; }
-        .success-icon { font-size: 80px; margin-bottom: 20px; }
-        .success-title { font-size: 28px; color: #28a745; margin-bottom: 10px; }
-        .success-message { color: #666; font-size: 16px; }
+        /* Success Banner (shown inline above form, fields stay visible) */
+        .success-banner {
+            display: none;
+            background: #d4edda;
+            color: #155724;
+            padding: 20px 30px;
+            margin: 0 40px 20px 40px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .success-banner .success-icon { font-size: 40px; margin-bottom: 8px; }
+        .success-banner .success-title { font-size: 20px; color: #28a745; margin-bottom: 4px; }
+        .success-banner .success-message { color: #155724; font-size: 14px; }
 
         .help-text { font-size: 13px; color: #666; margin-top: 4px; }
     </style>
@@ -201,6 +209,16 @@
             <div class="step" data-step="3">
                 <div class="step-number">3</div>
                 <div class="step-label">Documents</div>
+            </div>
+        </div>
+
+        <!-- Success banner shown inline after submit; form fields stay visible below -->
+        <div class="success-banner" id="successBanner">
+            <div class="success-icon">🎉</div>
+            <div class="success-title">Welcome Aboard!</div>
+            <div class="success-message">
+                Your onboarding form has been submitted successfully.
+                HR will review your information and contact you within 2 business days.
             </div>
         </div>
 
@@ -462,15 +480,7 @@
 
             </form>
 
-            <!-- Success Page -->
-            <div class="success-page" id="successPage">
-                <div class="success-icon">🎉</div>
-                <div class="success-title">Welcome Aboard!</div>
-                <div class="success-message">
-                    Your onboarding form has been submitted successfully.<br>
-                    HR will review your information and contact you within 2 business days.
-                </div>
-            </div>
+            <!-- Old success page removed; using inline success-banner above instead -->
         </div>
     </div>
 
@@ -547,9 +557,22 @@
                 const result = await response.json();
 
                 if (result.status === 'success') {
-                    document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
-                    document.getElementById('successPage').style.display = 'block';
-                    document.querySelector('.progress-container').style.display = 'none';
+                    // Show success banner but keep form fields visible
+                    // so the agent can take a verification screenshot.
+                    document.getElementById('successBanner').style.display = 'block';
+
+                    // Mark all progress steps as completed
+                    document.querySelectorAll('.step').forEach(step => {
+                        step.classList.remove('active');
+                        step.classList.add('completed');
+                    });
+
+                    // Disable the submit button to prevent re-submission
+                    const submitBtn = document.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.textContent = '✓ Submitted';
+                        submitBtn.disabled = true;
+                    }
                 }
             } catch (error) {
                 alert('Error submitting form: ' + error.message);
