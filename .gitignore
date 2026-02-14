@@ -9,6 +9,8 @@ __pycache__/
 .DS_Store
 .gitkeep
 
+*/screenshots/*
+
 # Distribution / packaging
 .Python
 build/

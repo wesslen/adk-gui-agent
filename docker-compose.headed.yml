@@ -1,0 +1,39 @@
+# Docker Compose override for headed mode (visible browser window)
+# Works on both Mac (XQuartz) and Linux (X11)
+#
+# Usage:
+#   Mac:   HEADED_DISPLAY=host.docker.internal:0 make start-services-headed
+#   Linux: HEADED_DISPLAY=${DISPLAY} make start-services-headed
+#
+# Or use the Makefile targets which auto-detect:
+#   make start-services-headed  (auto-detects OS)
+#
+# Requirements:
+#   Mac: XQuartz installed with "Allow connections from network clients" enabled
+#   Linux: X11 running, run "xhost +local:docker" before starting
+
+version: "3.8"
+
+services:
+  playwright-mcp:
+    environment:
+      # HEADED_DISPLAY is set by Makefile based on OS
+      # Mac: host.docker.internal:0 (XQuartz)
+      # Linux: $DISPLAY (typically :0 or :1)
+      - DISPLAY=${HEADED_DISPLAY:-host.docker.internal:0}
+      - PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+      - PLAYWRIGHT_FIREFOX_ARGS=--no-sandbox
+      - PLAYWRIGHT_MCP_OUTPUT_DIR=/app
+    volumes:
+      - ./playwright-mcp:/app
+      - ./gui_agent_v1/screenshots:/app/screenshots
+      - playwright_cache:/root/.cache
+      # X11 Unix socket (used on Linux, ignored on Mac)
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    command: >
+      bash -c "
+        npm install -g @playwright/mcp@latest &&
+        cd $(npm root -g)/@playwright/mcp &&
+        npx playwright install firefox --with-deps &&
+        playwright-mcp --port 8931 --host 0.0.0.0 --browser firefox --output-dir /app
+      "

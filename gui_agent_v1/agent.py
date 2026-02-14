@@ -54,12 +54,12 @@ def _screenshot_callback(
     screenshots.
 
     File location strategy:
-      - The callback prepends ``screenshots/`` to the filename so the
-        Playwright MCP server writes to ``<working_dir>/screenshots/``.
+      - The callback creates absolute paths like ``/app/screenshots/filename.png``
+        for the Playwright MCP server running in Docker (working_dir: /app).
       - In Docker, ``./gui_agent_v1/screenshots`` is volume-mounted to
-        ``/app/screenshots``, so files land in the agent's own folder.
-      - For local (non-Docker) usage the ``screenshots/`` sub-directory
-        is created relative to wherever the MCP server runs.
+        ``/app/screenshots``, so files persist to the host agent folder.
+      - The absolute path ensures screenshots save to the correct location
+        regardless of the MCP server's installation directory.
 
     Args:
         tool: The tool being called (BaseTool/McpTool instance).
@@ -84,10 +84,15 @@ def _screenshot_callback(
         # Ensure it has an extension
         if "." not in base:
             base = f"{base}.png"
-        args["filename"] = f"{screenshot_dir}/{timestamp}_{base}"
+        filename = f"{timestamp}_{base}"
     else:
         # No filename provided — create a descriptive default
-        args["filename"] = f"{screenshot_dir}/{timestamp}_screenshot.png"
+        filename = f"{timestamp}_screenshot.png"
+
+    # Use absolute path for Docker container (MCP server working dir)
+    # The volume mount ./gui_agent_v1/screenshots:/app/screenshots
+    # means /app/screenshots in container maps to host screenshots dir
+    args["filename"] = f"/app/{screenshot_dir}/{filename}"
 
     logger.debug(f"Screenshot will be saved as: {args['filename']}")
     return None

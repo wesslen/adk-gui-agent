@@ -14,9 +14,11 @@ help:
 	@echo "  make setup-env      Copy .env.example to .env"
 	@echo ""
 	@echo "Services:"
-	@echo "  make start-services Start Phoenix + Playwright MCP (Docker)"
-	@echo "  make stop-services  Stop all Docker services"
-	@echo "  make mock-server    Start the mock form website"
+	@echo "  make start-services        Start Phoenix + Playwright MCP (Docker, headless)"
+	@echo "  make setup-headed-mode     Setup XQuartz for headed mode (Mac only, run once)"
+	@echo "  make start-services-headed Start services with visible browser (requires XQuartz)"
+	@echo "  make stop-services         Stop all Docker services"
+	@echo "  make mock-server           Start the mock form website"
 	@echo ""
 	@echo "Run Agent:"
 	@echo "  make run            Run agent (uses BROWSER_HEADLESS from .env)"
@@ -72,6 +74,48 @@ start-services:
 	@echo "Services starting..."
 	@echo "  Phoenix UI: http://localhost:6006"
 	@echo "  Playwright MCP: http://localhost:8931"
+
+setup-headed-mode:
+	@# Auto-detect OS and run appropriate setup script
+	@if [ "$$(uname)" = "Darwin" ]; then \
+		echo "Detected: macOS - Running XQuartz setup..."; \
+		echo ""; \
+		bash scripts/setup_headed_mode_mac.sh; \
+	else \
+		echo "Detected: Linux - Running X11 setup..."; \
+		echo ""; \
+		bash scripts/setup_headed_mode_linux.sh; \
+	fi
+
+start-services-headed:
+	@echo "Starting services in HEADED mode (browser window visible)..."
+	@echo ""
+	@# Detect OS and set appropriate DISPLAY
+	@if [ "$$(uname)" = "Darwin" ]; then \
+		echo "Detected: macOS - Using XQuartz display"; \
+		echo "Requirements:"; \
+		echo "  1. XQuartz must be installed and running"; \
+		echo "  2. Run 'make setup-headed-mode' first if not already configured"; \
+		echo ""; \
+		HEADED_DISPLAY=host.docker.internal:0 docker compose -f docker-compose.yml -f docker-compose.headed.yml up -d; \
+	else \
+		echo "Detected: Linux - Using host X11 display"; \
+		echo "Requirements:"; \
+		echo "  1. X11 must be running"; \
+		echo "  2. Run: xhost +local:docker"; \
+		echo ""; \
+		HEADED_DISPLAY=$${DISPLAY:-:0} docker compose -f docker-compose.yml -f docker-compose.headed.yml up -d; \
+	fi
+	@echo ""
+	@echo "Services starting..."
+	@echo "  Phoenix UI: http://localhost:6006"
+	@echo "  Playwright MCP: http://localhost:8931 (HEADED MODE)"
+	@echo ""
+	@if [ "$$(uname)" = "Darwin" ]; then \
+		echo "Note: If browser window doesn't appear on Mac, run: make setup-headed-mode"; \
+	else \
+		echo "Note: If browser window doesn't appear on Linux, run: xhost +local:docker"; \
+	fi
 
 start-mock-server:
 	docker compose --profile testing up -d mock-server

@@ -34,7 +34,8 @@ services:
     environment:
       - DISPLAY=:99
       - PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-      - PLAYWRIGHT_CHROMIUM_ARGS=--no-sandbox --disable-setuid-sandbox
+      - PLAYWRIGHT_FIREFOX_ARGS=--no-sandbox
+      - PLAYWRIGHT_MCP_OUTPUT_DIR=/app
     volumes:
       - ./playwright-mcp:/app
       - ./gui_agent_v1/screenshots:/app/screenshots
@@ -42,8 +43,9 @@ services:
     command: >
       bash -c "
         npm install -g @playwright/mcp@latest &&
-        npx playwright install chrome --with-deps &&
-        npx @playwright/mcp@latest --port 8931 --host 0.0.0.0 --headless --no-sandbox
+        cd $(npm root -g)/@playwright/mcp &&
+        npx playwright install firefox --with-deps &&
+        playwright-mcp --port 8931 --host 0.0.0.0 --headless --no-sandbox --browser firefox --output-dir /app
       "
     # For headed mode, remove --headless and use X11 forwarding:
     # command: >
@@ -56,7 +58,7 @@ services:
     # environment:
     #   - DISPLAY=${DISPLAY}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8931/sse"]
+      test: ["CMD", "sh", "-c", "curl --max-time 2 -H 'Host: localhost:8931' http://127.0.0.1:8931/sse 2>&1 | grep -q 'event:'"]
       interval: 30s
       timeout: 10s
       retries: 5
