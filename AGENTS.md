@@ -31,8 +31,6 @@ make start-mock-server  # Optional: start test form server
 make run-headless     # Headless mode (for Cloud Shell)
 make run-headed       # Headed mode (local dev with display)
 
-# Run ADK evals (requires google-adk[eval])
-uv add "google-adk[eval]"                                        # One-time setup
 uv run adk eval gui_agent_v1 gui_agent_v1/evals/simple.evalset.json   # Run simple evals
 uv run adk eval gui_agent_v1 gui_agent_v1/evals/complex.evalset.json  # Run complex evals
 ```
