@@ -163,7 +163,6 @@ open http://localhost:6006
   - ✅ From host: `http://localhost:8080` works
   - ✅ From container to container: `http://mock-server:8080` works
   - ❌ From container to host localhost: Use `http://host.docker.internal:PORT` instead
-- **Headless mode**: Docker containers run with `--no-sandbox` for Firefox (required in containerized environments)
 
 ---
 
@@ -181,7 +180,7 @@ open http://localhost:6006
          │
          ├─→ Playwright MCP Server (Docker)
          │   - Port: 8931
-         │   - Browser: Firefox (native ARM64, headless, no-sandbox)
+         │   - Browser: Firefox (native ARM64, headless)
          │   - Tools: browser_navigate, browser_take_screenshot, etc.
          │
          └─→ Arize Phoenix (Docker)
@@ -281,12 +280,6 @@ curl http://localhost:8080  # Works if port is mapped
 **Solution:** Install `chrome` (not `chromium`) with `--with-deps`
 ```yaml
 npx playwright install chrome --with-deps
-```
-
-### Issue: "Running as root without --no-sandbox is not supported"
-**Solution:** Add `--no-sandbox` flag to Playwright MCP
-```yaml
-npx @playwright/mcp@latest --port 8931 --host 0.0.0.0 --headless --no-sandbox
 ```
 
 ### Issue: "Form data requires python-multipart"
@@ -455,7 +448,7 @@ PHOENIX_COLLECTOR_ENDPOINT=http://localhost:6006/v1/traces
          npm install -g @playwright/mcp@latest &&
          cd $(npm root -g)/@playwright/mcp &&
          npx playwright install firefox --with-deps &&
-         playwright-mcp --port 8931 --host 0.0.0.0 --headless --no-sandbox --browser firefox
+         playwright-mcp --port 8931 --host 0.0.0.0 --headless --browser firefox
        "
    ```
 
@@ -529,7 +522,7 @@ Navigate to http://mock-server:8080/simple and fill out the contact form with:
 
 2. **Fixed Chrome installation:**
    - Changed from `chromium` to `chrome`
-   - Added `--no-sandbox` flag to Playwright MCP
+   - Added `--no-sandbox` flag to Playwright MCP (later removed when switched to Firefox)
    - Added `--with-deps` for system dependencies
 
 3. **Fixed mock server:**
@@ -627,7 +620,6 @@ npx playwright open --browser chrome --headless https://example.com
 - [ ] Add ADK user simulation eval cases (multi-turn ConversationScenario format)
 - [ ] Implement programmatic evaluation of custom criteria (field_data_mapping, must_not_include_actions)
 - [ ] Add retry logic for flaky network requests
-- [ ] Consider alternatives to `--no-sandbox` for production
 - [ ] Add more mock forms (multi-step, file uploads, etc.)
 - [ ] Improve error messages and recovery
 - [ ] Add session persistence across runs

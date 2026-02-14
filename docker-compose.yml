@@ -45,7 +45,7 @@ services:
         npm install -g @playwright/mcp@latest &&
         cd $(npm root -g)/@playwright/mcp &&
         npx playwright install firefox --with-deps &&
-        playwright-mcp --port 8931 --host 0.0.0.0 --headless --no-sandbox --browser firefox --output-dir /app
+        playwright-mcp --port 8931 --host 0.0.0.0 --headless --browser firefox --output-dir /app
       "
     # For headed mode, remove --headless and use X11 forwarding:
     # command: >
