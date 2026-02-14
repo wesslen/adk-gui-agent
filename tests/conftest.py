@@ -232,3 +232,6 @@ def pytest_configure(config: pytest.Config) -> None:
     config.addinivalue_line("markers", "slow: marks tests as slow")
     config.addinivalue_line("markers", "integration: marks tests requiring external services")
     config.addinivalue_line("markers", "evalset: marks tests using ADK evaluation format")
+    config.addinivalue_line("markers", "docker: marks tests that validate Docker configuration")
+    config.addinivalue_line("markers", "platform: marks tests for platform compatibility (ARM64, OS-specific)")
+    config.addinivalue_line("markers", "headed: marks tests for headed mode functionality")
